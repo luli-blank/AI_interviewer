@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
+from interviewee_api import Login_api   
 app = FastAPI()
 
 # # ==========================================
@@ -22,23 +22,8 @@ app.add_middleware(
     allow_headers=["*"],        # 允许所有 Header                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
 )
 
-# --- 定义数据模型 ---
-class LoginRequest(BaseModel):
-    username: str
-    password: str
+app.include_router(Login_api.router, prefix="/api/interviewee",tags=["interviewee"])
 
-# --- 定义接口 ---
-@app.get("/")
-def read_root():
-    return {"message": "FastAPI is running!"}
-
-@app.post("/login")
-def login(data: LoginRequest):
-    # 模拟登录逻辑
-    if data.username == "admin" and data.password == "123456":
-        return {"code": 200, "message": "登录成功", "token": "fake-jwt-token"}
-    else:
-        return {"code": 401, "message": "用户名或密码错误"}
-
+ 
 # 启动命令（在终端运行）：
-# uvicorn main:app --reload --port 8000
+# uvicorn main_api:app --reload --port 8000

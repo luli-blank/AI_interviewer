@@ -13,7 +13,7 @@ interface LoginResponse {
 // 登录接口
 export function loginApi(data: object) {
   return request<any, LoginResponse>({
-    url: '/login', // 这里会自动拼接到 baseURL 后面
+    url: '/api/interviewee/login', // 这里会自动拼接到 baseURL 后面
     method: 'post',
     data // 发送的用户名密码
   })
