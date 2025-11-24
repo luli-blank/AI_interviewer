@@ -1,0 +1,60 @@
+name: Build Electron App
+
+on:
+  push:
+    tags:
+      - 'v*' # 只有打 tag (如 v1.0.0) 时才触发构建，避免每次 push 都消耗构建时长
+  workflow_dispatch: # 允许手动在 GitHub 页面点击触发
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm' # 开启缓存，加速依赖安装
+
+      - name: Install Dependencies
+        run: npm install
+
+      # Linux 平台特有的依赖安装（如果是 snap 包可能还需要更多）
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libicns-utils graphicsmagick
+
+      # 构建并打包
+      # 注意：这里假设你的 package.json 里的 build 命令会触发 electron-builder
+      # 关键：传入 GitHub Token 以便 electron-builder 能够发布 Release 到 GitHub
+      - name: Build & Release
+        run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 如果你有 macOS 证书，需要在这里配置 secrets
+          # GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          # CSC_LINK: ${{ secrets.CSC_LINK }}
+          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      # 上传构建产物到 GitHub Actions 临时存储（可选，便于调试）
+      # electron-builder 默认输出目录通常是 dist_electron，请根据你实际配置修改 path
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-${{ matrix.os }}
+          path: |
+            dist_electron/*.exe
+            dist_electron/*.dmg
+            dist_electron/*.AppImage
+            dist_electron/*.snap
+          retention-days: 5
