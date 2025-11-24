@@ -18,3 +18,7 @@ export function loginApi(data: object) {
     data // 发送的用户名密码
   })
 }
+
+export const registerApi = (data: any) => {
+  return request.post('/api/interviewee/register', data)
+}
