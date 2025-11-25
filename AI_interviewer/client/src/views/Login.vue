@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 // 1. 引入 loginApi 和 新增的 registerApi
 import { loginApi, registerApi } from '../api/user'
@@ -12,20 +12,42 @@ const password = ref('')
 const email = ref('') // 新增：注册需要的邮箱
 const errorMessage = ref('')
 
+// 【修改点 1】定义输入框的引用，用于代码强制聚焦
+const usernameInputRef = ref<HTMLInputElement | null>(null)
+
 // 新增：控制当前是“登录模式”还是“注册模式”
 const isRegisterMode = ref(false)
 
 // 计算属性：动态显示按钮文字
 const buttonText = computed(() => isRegisterMode.value ? '立即注册' : '登录系统')
 
+// 【修改点 2】页面加载时的焦点修复逻辑 (解决 Electron 输入框卡顿)
+onMounted(() => {
+  nextTick(() => {
+    // 1. 强制当前窗口获取焦点
+    window.focus()
+    // 2. 清除可能残留的焦点
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+    // 3. 聚焦到用户名输入框
+    if (usernameInputRef.value) {
+      usernameInputRef.value.focus()
+    }
+  })
+})
+
 // === 切换模式逻辑 ===
 const toggleMode = () => {
   isRegisterMode.value = !isRegisterMode.value
   errorMessage.value = '' // 切换时清空错误提示
-  // 可选：切换时是否清空输入框，看个人喜好
-  // username.value = ''
-  // password.value = ''
-  // email.value = ''
+  
+  // 切换模式后，也自动聚焦输入框，提升体验
+  nextTick(() => {
+    if (usernameInputRef.value) {
+      usernameInputRef.value.focus()
+    }
+  })
 }
 
 // === 核心提交逻辑 ===
@@ -48,19 +70,30 @@ const handleSubmit = async () => {
     if (isRegisterMode.value) {
       // ================= 注册逻辑 =================
       const res: any = await registerApi({
-      username: username.value,
-      password: password.value,
-      email: email.value
-    })
+        username: username.value,
+        password: password.value,
+        email: email.value
+      })
 
       // 假设后端成功返回了用户对象或 code=200
-      // 注意：根据之前的后端代码，注册成功直接返回 UserResponse 对象，可能没有 code 字段
-      // 这里做一个通用的成功判断
       if (res && (res.code === 200 || res.id)) {
-        alert('注册成功！请直接登录')
-        // 注册成功后，自动切回登录模式，并填好用户名让用户输密码
+        // 【修改点 3】删除了 alert('注册成功...')
+        // 原生 alert 会导致 Electron 窗口焦点丢失，导致输入框无法选中
+        
+        // 这里的策略是：直接切回登录模式，用户自然知道成功了
+        // 如果需要提示，建议使用 ElMessage 或 errorMessage.value = '注册成功，请登录'
+        
         isRegisterMode.value = false 
         password.value = '' 
+
+        errorMessage.value = '注册成功！请直接登录'
+        
+        // 注册成功切回登录页后，强制聚焦输入框
+        nextTick(() => {
+          if (usernameInputRef.value) {
+            usernameInputRef.value.focus()
+          }
+        })
       } else {
         errorMessage.value = res.message || '注册失败，用户名或邮箱可能已存在'
       }
@@ -74,9 +107,17 @@ const handleSubmit = async () => {
 
       if (res.code === 200) {
         console.log('登录成功:', res)
-        if (res.data && res.data.token) {
-          localStorage.setItem('token', res.data.token)
+        
+        // 适配后端结构
+        const token = (res as any).token || (res.data && res.data.token)
+
+        if (token) {
+          localStorage.removeItem('token')
+          localStorage.setItem('token', token)
+        } else {
+          console.warn('注意：后端虽然返回200，但没有携带Token')
         }
+
         router.push({ name: 'Home' })
       } else {
         errorMessage.value = res.message || '用户名或密码错误'
@@ -85,9 +126,7 @@ const handleSubmit = async () => {
 
   } catch (error: any) {
     console.error('请求出错:', error)
-    // 区分一下是登录还是注册出的错
     const actionName = isRegisterMode.value ? '注册' : '登录'
-    // 如果后端返回 400 (HttpException)，axios 通常会在 error.response 里
     if (error.response && error.response.data && error.response.data.detail) {
         errorMessage.value = error.response.data.detail
     } else {
@@ -107,6 +146,7 @@ const handleSubmit = async () => {
         v-model.trim="username" 
         type="text" 
         placeholder="请输入用户名" 
+        autocomplete="off" 
       />
 
       <!-- 只有在注册模式下才显示邮箱输入框 -->
@@ -115,6 +155,7 @@ const handleSubmit = async () => {
         v-model.trim="email" 
         type="email" 
         placeholder="请输入邮箱 (example@qq.com)" 
+        autocomplete="off" 
       />
 
       <input 
@@ -122,6 +163,7 @@ const handleSubmit = async () => {
         type="password" 
         placeholder="请输入密码" 
         @keyup.enter="handleSubmit"
+        autocomplete="off" 
       />
     </div>
 

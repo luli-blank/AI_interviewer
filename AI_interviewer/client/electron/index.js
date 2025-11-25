@@ -1,5 +1,7 @@
 const path = require('path')
 const { app, BrowserWindow } = require('electron')
+ app.disableHardwareAcceleration()
+
  
 if (require('electron-squirrel-startup')) {
   app.quit()
