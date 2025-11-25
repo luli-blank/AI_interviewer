@@ -36,5 +36,5 @@ app.add_middleware(
 app.include_router(Login_api.router, prefix="/api/interviewee",tags=["interviewee"])
 app.include_router(Login_api.router, prefix="/api/interviewee", tags=["interviewee"])
  
-# 启动命令（在终端运行）：
-# uvicorn main_api:app --reload --port 8000
+# 启动命令（在终端运行）：终端路径需要抵达backstage
+# uvicorn app.api.main_api:app --reload --port 8000
