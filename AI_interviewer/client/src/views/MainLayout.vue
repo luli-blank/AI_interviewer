@@ -33,13 +33,11 @@ const handleSelect = (key: string) => {
     
     <!-- === 顶部导航栏 === -->
     <el-header class="top-header">
-      <!-- 去掉了 max-width 限制，使其铺满全屏 -->
       <div class="header-inner">
         
         <!-- 1. 左侧 Logo Area -->
          <div class="logo-area" @click="router.push({name: 'Home'})">
           <img :src="logoImg" alt="Logo" class="custom-logo" />
-          <!-- 增加 hide-on-mobile 类，小屏幕时隐藏文字 -->
           <span class="logo-text hide-on-mobile">AI_interviewer</span>
         </div>
 
@@ -59,7 +57,7 @@ const handleSelect = (key: string) => {
             </el-menu-item>
 
             <!-- 新建岗位 -->
-            <el-menu-item index="Home_Create" disabled>
+            <el-menu-item index="CreateJob_1" >
               <el-icon><Document /></el-icon>
               <span class="menu-text">新建岗位</span>
             </el-menu-item>
@@ -71,7 +69,7 @@ const handleSelect = (key: string) => {
             </el-menu-item>
 
             <!-- 面试复盘 -->
-            <el-menu-item index="Dashboard" disabled>
+            <el-menu-item index="Dashboard" >
               <el-icon><DataAnalysis /></el-icon>
               <span class="menu-text">面试复盘</span>
             </el-menu-item>
@@ -86,7 +84,6 @@ const handleSelect = (key: string) => {
 
         <!-- 3. 右侧功能区 -->
         <div class="right-actions">
-          <!-- 用户头像下拉 -->
           <el-dropdown trigger="click">
             <div class="user-avatar-box">
               <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
@@ -130,7 +127,6 @@ const handleSelect = (key: string) => {
   height: 64px;
   background-color: #ffffff;
   border-bottom: 1px solid #e4e7ed;
-  /* 修改点 1: 移除左右 padding，交给内部元素控制，防止宽度溢出 */
   padding: 0; 
   position: sticky;
   top: 0;
@@ -139,15 +135,13 @@ const handleSelect = (key: string) => {
 }
 
 .header-inner {
-  /* 修改点 2: 移除 max-width: 1400px，改为 width: 100% */
   width: 100%; 
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* 增加左右内边距，确保内容不贴边 */
   padding: 0 24px; 
-  box-sizing: border-box; /* 确保 padding 不会撑大 width */
+  box-sizing: border-box; 
 }
 
 /* 左侧 Logo */
@@ -155,8 +149,7 @@ const handleSelect = (key: string) => {
   display: flex;
   align-items: center;
   cursor: pointer;
-  /* 修改点 3: 移除 min-width，防止小屏挤压 */
-  flex-shrink: 0; /* 防止 Logo 被压缩 */
+  flex-shrink: 0; 
   margin-right: 20px;
 }
 
@@ -173,7 +166,7 @@ const handleSelect = (key: string) => {
   color: #333;
   letter-spacing: 0.5px;
   font-family: 'PingFang SC', sans-serif;
-  white-space: nowrap; /* 防止文字换行 */
+  white-space: nowrap; 
 }
 
 /* 中间导航 - 核心布局 */
@@ -181,9 +174,8 @@ const handleSelect = (key: string) => {
   flex: 1;
   display: flex;
   justify-content: center;
-  /* 允许导航区域在空间不足时压缩 */
   min-width: 0; 
-  overflow: hidden; /* 防止溢出 */
+  overflow: hidden; 
 }
 
 .top-menu {
@@ -201,7 +193,7 @@ const handleSelect = (key: string) => {
   font-size: 14px;
   color: #606266;
   font-weight: 500;
-  padding: 0 20px !important; /* 默认间距 */
+  padding: 0 20px !important; 
   height: 64px;
   line-height: 64px;
   border-bottom: 2px solid transparent !important;
@@ -223,7 +215,7 @@ const handleSelect = (key: string) => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-shrink: 0; /* 防止被压缩 */
+  flex-shrink: 0; 
   margin-left: 20px;
 }
 
@@ -234,10 +226,36 @@ const handleSelect = (key: string) => {
   gap: 4px;
 }
 
-/* === 内容区 === */
+/* === 内容区域 === */
 .layout-main {
   padding: 0;
-  overflow-y: auto;
+  
+  /* 关键点：设置为 auto，内容不足时不显示，溢出时显示 */
+  overflow-y: auto; 
+  height: 100%; 
+}
+
+/* === 全局滚动条美化 (应用在 .layout-main 上) === */
+/* 1. 滚动条整体 */
+.layout-main::-webkit-scrollbar {
+  width: 8px; /* 竖向滚动条宽度 */
+  height: 8px; /* 横向滚动条高度 */
+}
+
+/* 2. 滚动条轨道 (透明) */
+.layout-main::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+/* 3. 滚动条滑块 (默认半透明黑) */
+.layout-main::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2); 
+  border-radius: 4px;
+}
+
+/* 4. 鼠标悬停 (墨绿色高亮 - 与 Home.vue 保持一致) */
+.layout-main::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(58, 133, 107, 0.8); 
 }
 
 /* 路由切换动画 */
@@ -250,38 +268,27 @@ const handleSelect = (key: string) => {
   opacity: 0;
 }
 
-/* === 修改点 4: 媒体查询 (响应式适配) === */
+/* === 媒体查询 (响应式适配) === */
 
-/* 当屏幕宽度小于 1000px 时 */
 @media (max-width: 1000px) {
-  /* 减小菜单项的左右间距 */
   :deep(.el-menu-item) {
     padding: 0 10px !important;
   }
 }
 
-/* 当屏幕宽度小于 768px (平板/小窗口) 时 */
 @media (max-width: 768px) {
-  /* 隐藏 Logo 文字，只保留图片 */
   .logo-text {
     display: none;
   }
   
-  /* 进一步减小 Logo 图片大小 */
   .custom-logo {
     margin-right: 0;
   }
-
-  /* 隐藏菜单的文字，只保留图标 (可选，如果你想更极致) */
-  /* 
-  .menu-text {
-    display: none;
-  } 
-  */
   
-  /* 减小 header 左右 padding */
   .header-inner {
     padding: 0 12px;
   }
+  
+  /* 注意：此处删除了原本重复的滚动条样式，统一使用上方的全局定义 */
 }
 </style>

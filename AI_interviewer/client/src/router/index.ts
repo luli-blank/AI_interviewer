@@ -1,12 +1,18 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 
 
+
 // 懒加载引入（推荐写法）
 const Home = () => import('../views/Home.vue')
 const Settings = () => import('../views/Settings.vue')
 const Go = () => import('../views/Going.vue')
 const Login = () => import('../views/Login.vue')
 const MainLayout = () => import('../views/MainLayout.vue')
+const CreateJob_1 = () => import('../views/CreateJob_1.vue')
+const CreateJob_2 = () => import('../views/CreateJob_2.vue')
+const CreateJob_3 = () => import('../views/CreateJob_3.vue')
+const Review = () => import('../views/Review.vue')
+
 
 const routes: Array<RouteRecordRaw> = [
   { 
@@ -25,12 +31,12 @@ const routes: Array<RouteRecordRaw> = [
     redirect: '{name: "Home"}', // 默认子路由
     children:[
       {
-        path:'home',
+        path:'Home',
         name:'Home',
         component:Home
       },
       { 
-        path: 'settings', 
+        path: 'Settings', 
         name: 'Settings', 
         component: Settings 
       },
@@ -38,6 +44,26 @@ const routes: Array<RouteRecordRaw> = [
         path: 'Going', 
         name: 'Going', 
         component: Go
+      },
+      { 
+        path: 'CreateJob_1', 
+        name: 'CreateJob_1', 
+        component: CreateJob_1
+      },
+      { 
+        path: 'CreateJob_2', 
+        name: 'CreateJob_2', 
+        component: CreateJob_2
+      },
+      { 
+        path: 'CreateJob_3', 
+        name: 'CreateJob_3', 
+        component: CreateJob_3
+      },
+      { 
+        path: 'Review', 
+        name: 'Review', 
+        component: Review
       },
     ]
   },
