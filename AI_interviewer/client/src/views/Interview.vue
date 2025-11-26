@@ -2,8 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router'
 
-const router = useRouter()
-
+const route = useRoute() 
 
 // 面试累计时长
 const totalTimer = ref('00:12:45');
@@ -41,7 +40,7 @@ const startTotalTimer = () => {
     totalTimer.value = `${hours}:${minutes}:${seconds}`;
   }, 1000);
 
-const isSubtitleOn = ref(true); // 字幕开关
+  const isSubtitleOn = ref(true); // 字幕开关
 const speed = ref(1); // 字幕滚动速度
 const subtitleLines = ref([
   '你好，很高兴今天能和你进行这次面试。',

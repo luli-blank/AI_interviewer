@@ -63,7 +63,7 @@ const handleSelect = (key: string) => {
             </el-menu-item>
 
             <!-- 面试演练 -->
-            <el-menu-item index="Going">
+            <el-menu-item index="Interview_practice">
               <el-icon><VideoPlay /></el-icon>
               <span class="menu-text">面试演练</span>
             </el-menu-item>
@@ -91,7 +91,7 @@ const handleSelect = (key: string) => {
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item>个人中心</el-dropdown-item>
+                <el-dropdown-item @click="router.push({name:'Profile'})">个人中心</el-dropdown-item>
                 <el-dropdown-item divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>

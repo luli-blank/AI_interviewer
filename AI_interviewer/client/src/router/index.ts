@@ -2,16 +2,19 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 
 
 
+
 // 懒加载引入（推荐写法）
 const Home = () => import('../views/Home.vue')
 const Settings = () => import('../views/Settings.vue')
-const Go = () => import('../views/Going.vue')
+const Interview_practice = () => import('../views/Interview_practice.vue')
 const Login = () => import('../views/Login.vue')
 const MainLayout = () => import('../views/MainLayout.vue')
 const CreateJob_1 = () => import('../views/CreateJob_1.vue')
 const CreateJob_2 = () => import('../views/CreateJob_2.vue')
 const CreateJob_3 = () => import('../views/CreateJob_3.vue')
 const Review = () => import('../views/Review.vue')
+const Profile = () => import('../views/Profile.vue')
+const Interview = () => import('../views/Interview.vue')
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -41,9 +44,9 @@ const routes: Array<RouteRecordRaw> = [
         component: Settings 
       },
       { 
-        path: 'Going', 
-        name: 'Going', 
-        component: Go
+        path: 'Interview_practice', 
+        name: 'Interview_practice', 
+        component: Interview_practice
       },
       { 
         path: 'CreateJob_1', 
@@ -65,7 +68,17 @@ const routes: Array<RouteRecordRaw> = [
         name: 'Review', 
         component: Review
       },
+      {
+        path: 'Interview',
+        name: 'Interview',
+        component: Interview 
+      },
     ]
+  },
+  {
+    path: '/Profile',
+    name : 'Profile',
+    component: Profile
   },
   
 ]
