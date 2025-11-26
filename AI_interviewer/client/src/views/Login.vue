@@ -1,48 +1,48 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-// 1. 引入 loginApi 和 新增的 registerApi
+// 保持原来的 API 引用路径
 import { loginApi, registerApi } from '../api/user'
+
+// === 新增：引入 Element Plus 图标 ===
+import { User, Lock, Message, ArrowRight } from '@element-plus/icons-vue'
+// === 新增：引入类型定义，防止 TS 报错 ===
+import type { InputInstance } from 'element-plus'
 
 const router = useRouter()
 
-// === 状态定义 ===
+// === 状态定义 (保持不变) ===
 const username = ref('')
 const password = ref('')
-const email = ref('') // 新增：注册需要的邮箱
+const email = ref('') 
 const errorMessage = ref('')
 
-// 【修改点 1】定义输入框的引用，用于代码强制聚焦
-const usernameInputRef = ref<HTMLInputElement | null>(null)
+// 【修改点】类型改为 InputInstance 以匹配 Element Plus 组件
+const usernameInputRef = ref<InputInstance | null>(null)
 
-// 新增：控制当前是“登录模式”还是“注册模式”
 const isRegisterMode = ref(false)
 
-// 计算属性：动态显示按钮文字
 const buttonText = computed(() => isRegisterMode.value ? '立即注册' : '登录系统')
 
-// 【修改点 2】页面加载时的焦点修复逻辑 (解决 Electron 输入框卡顿)
+// === 页面加载时的焦点修复逻辑 (保持不变) ===
 onMounted(() => {
   nextTick(() => {
-    // 1. 强制当前窗口获取焦点
     window.focus()
-    // 2. 清除可能残留的焦点
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur()
     }
-    // 3. 聚焦到用户名输入框
+    // Element Plus 的 focus 方法调用方式是一样的
     if (usernameInputRef.value) {
       usernameInputRef.value.focus()
     }
   })
 })
 
-// === 切换模式逻辑 ===
+// === 切换模式逻辑 (保持不变) ===
 const toggleMode = () => {
   isRegisterMode.value = !isRegisterMode.value
-  errorMessage.value = '' // 切换时清空错误提示
+  errorMessage.value = '' 
   
-  // 切换模式后，也自动聚焦输入框，提升体验
   nextTick(() => {
     if (usernameInputRef.value) {
       usernameInputRef.value.focus()
@@ -50,17 +50,14 @@ const toggleMode = () => {
   })
 }
 
-// === 核心提交逻辑 ===
+// === 核心提交逻辑 (保持不变) ===
 const handleSubmit = async () => {
-  // 1. 清空错误
   errorMessage.value = ''
 
-  // 2. 基础非空校验
   if (!username.value || !password.value) {
     errorMessage.value = '用户名和密码不能为空'
     return
   }
-  // 如果是注册模式，额外校验邮箱
   if (isRegisterMode.value && !email.value) {
     errorMessage.value = '注册需要填写邮箱'
     return
@@ -68,27 +65,18 @@ const handleSubmit = async () => {
 
   try {
     if (isRegisterMode.value) {
-      // ================= 注册逻辑 =================
+      // 注册逻辑
       const res: any = await registerApi({
         username: username.value,
         password: password.value,
         email: email.value
       })
 
-      // 假设后端成功返回了用户对象或 code=200
       if (res && (res.code === 200 || res.id)) {
-        // 【修改点 3】删除了 alert('注册成功...')
-        // 原生 alert 会导致 Electron 窗口焦点丢失，导致输入框无法选中
-        
-        // 这里的策略是：直接切回登录模式，用户自然知道成功了
-        // 如果需要提示，建议使用 ElMessage 或 errorMessage.value = '注册成功，请登录'
-        
         isRegisterMode.value = false 
         password.value = '' 
-
         errorMessage.value = '注册成功！请直接登录'
         
-        // 注册成功切回登录页后，强制聚焦输入框
         nextTick(() => {
           if (usernameInputRef.value) {
             usernameInputRef.value.focus()
@@ -99,7 +87,7 @@ const handleSubmit = async () => {
       }
 
     } else {
-      // ================= 登录逻辑 (保持原样) =================
+      // 登录逻辑
       const res = await loginApi({
         username: username.value,
         password: password.value
@@ -107,17 +95,12 @@ const handleSubmit = async () => {
 
       if (res.code === 200) {
         console.log('登录成功:', res)
-        
-        // 适配后端结构
         const token = (res as any).token || (res.data && res.data.token)
 
         if (token) {
           localStorage.removeItem('token')
           localStorage.setItem('token', token)
-        } else {
-          console.warn('注意：后端虽然返回200，但没有携带Token')
-        }
-
+        } 
         router.push({ name: 'Home' })
       } else {
         errorMessage.value = res.message || '用户名或密码错误'
@@ -137,131 +120,204 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="login-container">
-    <!-- 标题根据模式变化 -->
-    <h1>{{ isRegisterMode ? '用户注册' : '欢迎登录' }}</h1>
+  <div class="login-bg">
+    <div class="login-container">
+      <el-card class="login-card" shadow="hover">
+        <template #header>
+          <div class="card-header">
+            <!-- 动态标题 -->
+            <h2>{{ isRegisterMode ? '创建新账户' : 'AI 面试官系统' }}</h2>
+            <p class="subtitle">{{ isRegisterMode ? '请填写信息完成注册' : '欢迎回来，请登录' }}</p>
+          </div>
+        </template>
 
-    <div class="input-group">
-      <input 
-        v-model.trim="username" 
-        type="text" 
-        placeholder="请输入用户名" 
-        autocomplete="off" 
-      />
+        <div class="form-content">
+          <!-- 用户名 -->
+          <el-input
+            ref="usernameInputRef"
+            v-model="username"
+            placeholder="请输入用户名"
+            size="large"
+            :prefix-icon="User"
+            clearable
+          />
 
-      <!-- 只有在注册模式下才显示邮箱输入框 -->
-      <input 
-        v-if="isRegisterMode"
-        v-model.trim="email" 
-        type="email" 
-        placeholder="请输入邮箱 (example@qq.com)" 
-        autocomplete="off" 
-      />
+          <!-- 邮箱 (带折叠动画) -->
+          <transition name="el-zoom-in-top">
+            <div v-if="isRegisterMode" class="input-wrapper">
+              <el-input
+                v-model="email"
+                type="email"
+                placeholder="请输入邮箱"
+                size="large"
+                :prefix-icon="Message"
+                clearable
+              />
+            </div>
+          </transition>
 
-      <input 
-        v-model.trim="password" 
-        type="password" 
-        placeholder="请输入密码" 
-        @keyup.enter="handleSubmit"
-        autocomplete="off" 
-      />
-    </div>
+          <!-- 密码 -->
+          <el-input
+            v-model="password"
+            type="password"
+            placeholder="请输入密码"
+            size="large"
+            :prefix-icon="Lock"
+            show-password
+            @keyup.enter="handleSubmit"
+          />
 
-    <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
+          <!-- 错误提示 -->
+          <div class="error-area">
+             <el-alert
+                v-if="errorMessage"
+                :title="errorMessage"
+                type="error"
+                show-icon
+                :closable="false"
+              />
+          </div>
 
-    <!-- 按钮点击触发 handleSubmit -->
-    <button @click="handleSubmit">{{ buttonText }}</button>
+          <!-- 提交按钮 -->
+          <el-button 
+            type="primary" 
+            size="large" 
+            class="submit-btn" 
+            @click="handleSubmit" 
+            round
+          >
+            {{ buttonText }}
+            <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+          </el-button>
 
-    <!-- 切换模式的文字链接 -->
-    <div class="toggle-box">
-      <span class="toggle-text" @click="toggleMode">
-        {{ isRegisterMode ? '已有账号？去登录' : '没有账号？去注册' }}
-      </span>
+          <!-- 切换模式 -->
+          <div class="toggle-box">
+            <span class="toggle-text" @click="toggleMode">
+              {{ isRegisterMode ? '已有账号？去登录' : '没有账号？立即注册' }}
+            </span>
+          </div>
+        </div>
+      </el-card>
+      
+      <div class="footer-copyright">
+        &copy; 2024 AI Interviewer. All rights reserved.
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 保持原有样式不变，只新增了 .toggle-box 相关样式 */
+/* 全屏背景：蓝紫渐变 */
+.login-bg {
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
 .login-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  width: 100vw;
-  height: 100vh;
-  background-color: #f0f2f5;
+  width: 100%;
+}
+
+/* 登录卡片 */
+.login-card {
+  width: 400px;
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-header {
+  text-align: center;
+  padding: 10px 0 0 0;
+}
+
+.card-header h2 {
   margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  color: #303133;
+  font-size: 24px;
+  font-weight: 600;
 }
 
-h1 {
-  margin-bottom: 30px;
-  color: #333;
+.subtitle {
+  margin-top: 10px;
+  margin-bottom: 0;
+  color: #909399;
+  font-size: 14px;
 }
 
-.input-group {
+.form-content {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 20px;
-  /* 增加高度过渡效果，让邮箱框出来时更丝滑 */
-  transition: all 0.3s;
+  gap: 20px;
+  padding: 10px 20px 20px;
 }
 
-input {
-  width: 250px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  outline: none;
-  font-size: 14px;
+.input-wrapper {
+  width: 100%;
 }
 
-input:focus {
-  border-color: #409eff;
+.error-area {
+  min-height: 40px; /* 预留高度防止跳动 */
+  display: flex;
+  align-items: center;
 }
 
-.error-msg {
-  color: red;
-  font-size: 14px;
-  margin-bottom: 15px;
-  height: 20px;
-}
-
-button {
-  width: 276px;
-  padding: 12px;
-  font-size: 16px;
-  background-color: #409eff;
-  color: white;
+.submit-btn {
+  width: 100%;
+  font-weight: bold;
+  letter-spacing: 2px;
+  background: linear-gradient(to right, #667eea, #764ba2); /* 按钮也用渐变色 */
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.3s;
+  transition: transform 0.1s, opacity 0.3s;
 }
 
-button:hover {
-  background-color: #66b1ff;
+.submit-btn:hover {
+  opacity: 0.9;
+  background: linear-gradient(to right, #667eea, #764ba2);
 }
 
-/* === 新增样式 === */
+.submit-btn:active {
+  transform: scale(0.98);
+}
+
 .toggle-box {
-  margin-top: 15px;
-  text-align: right;
-  width: 276px; /* 和按钮宽度一致 */
+  text-align: center; /* 居中更好看 */
+  margin-top: 5px;
 }
 
 .toggle-text {
-  color: #666;
+  color: #606266;
   font-size: 14px;
   cursor: pointer;
-  user-select: none; /* 防止双击选中文字 */
+  transition: color 0.3s;
 }
 
 .toggle-text:hover {
-  color: #409eff;
+  color: #764ba2;
   text-decoration: underline;
+}
+
+.footer-copyright {
+  margin-top: 25px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+/* 移动端适配 */
+@media (max-width: 480px) {
+  .login-card {
+    width: 90%;
+  }
 }
 </style>
