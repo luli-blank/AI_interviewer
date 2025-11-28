@@ -63,7 +63,7 @@ const nextStep = () => {
         <el-icon class="step-arrow"><ArrowRight /></el-icon>
         <span class="step-item">选择简历</span>
         <el-icon class="step-arrow"><ArrowRight /></el-icon>
-        <span class="step-item">准备完成</span>
+        <span class="step-item">岗位推荐</span>
       </div>
     </div>
 

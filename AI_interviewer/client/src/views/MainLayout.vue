@@ -56,10 +56,10 @@ const handleSelect = (key: string) => {
               <span class="menu-text">主页</span>
             </el-menu-item>
 
-            <!-- 新建岗位 -->
+            <!-- 岗位推荐 -->
             <el-menu-item index="CreateJob_1" >
               <el-icon><Document /></el-icon>
-              <span class="menu-text">新建岗位</span>
+              <span class="menu-text">岗位推荐</span>
             </el-menu-item>
 
             <!-- 面试演练 -->

@@ -1,18 +1,20 @@
 <script setup>
 import { ref, computed } from "vue";
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { User, Suitcase, ArrowRight } from '@element-plus/icons-vue' // 假设已安装图标库，如未安装可移除icon属性
+import avatar1 from '../img/log.png'
 
 const router = useRouter()
 
-
+// 模拟数据
 const jobs = ref([
   {
     id: 1,
     title: "前端开发工程师",
     desc: "负责前端页面开发，熟悉 Vue、TypeScript。",
     interviewers: [
-      { name: "李雷", title: "高级前端工程师", avatar: "/avatar1.png" },
-      { name: "韩梅梅", title: "前端技术专家", avatar: "/avatar2.png" }
+      { name: "雷雷", title: "高级算法工程师", avatar: avatar1 },
+      { name: "韩梅梅", title: "前端技术专家", avatar: avatar1}
     ]
   },
   {
@@ -20,230 +22,316 @@ const jobs = ref([
     title: "后端开发工程师",
     desc: "负责后端接口开发，熟悉 FastAPI、Node.js。",
     interviewers: [
-      { name: "张伟", title: "资深后端工程师", avatar: "/avatar3.png" }
+      { name: "张伟", title: "资深后端工程师", avatar: avatar1 }
     ]
   }
 ]);
 
-const selectedJobId = ref(null);
-
-const selectJob = (id) => {
-  selectedJobId.value = id;
-};
+// 默认选中 'all'
+const selectedJobId = ref("all");
 
 const currentJob = computed(() => {
   if (selectedJobId.value === "all") {
     return {
       title: "全部岗位",
-      desc: "查看所有岗位的面试官",
+      desc: "请选择下方的面试官开始模拟面试",
       interviewers: jobs.value.flatMap(j => j.interviewers)
     }
   }
-  return jobs.value.find(j => j.id === selectedJobId.value)
+  // 确保类型匹配（el-menu index 默认为 string）
+  return jobs.value.find(j => String(j.id) === selectedJobId.value)
 })
+
+const handleMenuSelect = (index) => {
+  selectedJobId.value = index;
+}
 
 const goToInterview = (interviewer) => {
   router.push({
-    name: 'Interview',  // Interview.vue 对应的路由 name
+    name: 'Interview',
     query: { 
       name: interviewer.name, 
       title: interviewer.title 
     }
   })
 }
-
 </script>
 
 <template>
-  <div class="interview-container">
-    <!-- 左侧岗位列表 -->
-    <div class="job-list">
-      <h2>选择岗位</h2>
-        <div
-      class="job-item"
-      :class="{ active: selectedJobId === 'all' }"
-      @click="selectJob('all')"
-      >
-      全部岗位
+  <el-container class="main-layout">
+    <!-- 左侧侧边栏 -->
+    <el-aside width="280px" class="custom-aside">
+      <div class="logo-area">
+        <h2 class="app-title">AI Interviewer</h2>
+        <p class="app-subtitle">选择您的目标岗位</p>
       </div>
-      <div
-        v-for="job in jobs"
-        :key="job.id"
-        class="job-item"
-        :class="{ active: job.id === selectedJobId }"
-        @click="selectJob(job.id)"
+      
+      <el-menu
+        :default-active="selectedJobId"
+        class="custom-menu"
+        @select="handleMenuSelect"
       >
-        {{ job.title }}
-      </div>
-    </div>
-
-    <!-- 右侧岗位详情 -->
-    <div class="job-detail">
-      <h2 v-if="currentJob">{{ currentJob.title }}</h2>
-      <p v-if="currentJob">{{ currentJob.desc }}</p>
-
-      <h3 v-if="currentJob">面试官</h3>
-
-      <div class="interviewer-box">
-        <div
-          v-for="p in currentJob?.interviewers"
-          :key="p.name"
-          class="interviewer-card"
-          @click="goToInterview(p)" 
+        <el-menu-item index="all">
+          <el-icon><Suitcase /></el-icon>
+          <span>全部岗位</span>
+        </el-menu-item>
+        
+        <el-menu-item 
+          v-for="job in jobs" 
+          :key="job.id" 
+          :index="String(job.id)"
         >
-          <img :src="p.avatar" class="avatar" />
-          <div class="info">
-            <div class="name">{{ p.name }}</div>
-            <div class="title">{{ p.title }}</div>
-          </div>
-        </div>
+          <el-icon><User /></el-icon>
+          <span>{{ job.title }}</span>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
+
+    <!-- 右侧主内容 -->
+    <el-main class="content-area">
+      <!-- 顶部面包屑/标题区 -->
+      <div class="header-section">
+        <h1 class="page-title">准备面试什么岗位呢？</h1>
+        <p class="page-desc">了解您的求职岗位，提高 AI 回答的针对性</p>
       </div>
-    </div>
-  </div>
+
+      <!-- 核心内容卡片 -->
+      <el-card class="detail-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <div>
+              <span class="job-title-large">{{ currentJob?.title }}</span>
+              <p class="job-desc-text">{{ currentJob?.desc }}</p>
+            </div>
+            <el-tag v-if="selectedJobId !== 'all'" type="success" effect="light" round>
+              当前选择
+            </el-tag>
+          </div>
+        </template>
+
+        <div class="interviewers-section">
+          <div class="section-label">推荐面试官</div>
+          
+          <el-row :gutter="20">
+            <el-col 
+              v-for="p in currentJob?.interviewers" 
+              :key="p.name" 
+              :xs="24" :sm="12" :md="8" :lg="6"
+            >
+              <div class="interviewer-card-wrapper" @click="goToInterview(p)">
+                <el-card shadow="hover" class="interviewer-card-item">
+                  <div class="card-content">
+                    <el-avatar :size="64" :src="p.avatar" class="custom-avatar" />
+                    <div class="text-info">
+                      <div class="p-name">{{ p.name }}</div>
+                      <div class="p-title">{{ p.title }}</div>
+                    </div>
+                    <div class="action-icon">
+                      <el-icon><ArrowRight /></el-icon>
+                    </div>
+                  </div>
+                </el-card>
+              </div>
+            </el-col>
+          </el-row>
+          
+          <el-empty 
+            v-if="!currentJob?.interviewers?.length" 
+            description="暂无面试官信息" 
+          />
+        </div>
+      </el-card>
+    </el-main>
+  </el-container>
 </template>
 
-
 <style scoped>
-.interview-container {
-  display: flex;
+/* 全局布局背景 */
+.main-layout {
   height: 100vh;
-  background: #f4f6fa;
-  font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+  background-color: #f7f9fc; /* 极淡的灰蓝色背景 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 左侧岗位列表 */
-.job-list {
-  width: 260px;
-  background: #fff;
-  border-right: 1px solid #e6e8eb;
-  padding: 24px;
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.03);
+/* 左侧侧边栏样式 */
+.custom-aside {
+  background-color: #ffffff;
+  border-right: 1px solid #ebEEF5;
   display: flex;
-  flex-direction: column; /* 垂直排列岗位 */
-  align-items: center;   
-}
-.job-item {
-  width: 100%;            /* 占满列表宽度 */
-  display: flex;
-  justify-content: center; /* 水平居中文字 */
-  align-items: center;     /* 垂直居中文字 */
-  padding: 14px 0;         /* 上下内边距 */
-  margin-bottom: 12px;
-  background: #f8f9fb;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  font-size: 15px;
-  color: #1c1c1e;
-  border: 1px solid transparent;
+  flex-direction: column;
 }
 
-.job-list h2 {
-  margin-bottom: 20px;
+.logo-area {
+  padding: 30px 24px;
+}
+
+.app-title {
+  margin: 0;
   font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #303133;
 }
 
-.job-item {
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  background: #f8f9fb; /* 浅灰背景 */
-  cursor: pointer;
+.app-subtitle {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: #909399;
+}
+
+/* 覆盖 Element Menu 样式以匹配图片风格 */
+.custom-menu {
+  border-right: none;
+  padding: 0 12px;
+}
+
+:deep(.el-menu-item) {
   border-radius: 8px;
-  transition: all 0.2s ease;
-  font-size: 15px;
-  color: #1c1c1e; /* 深灰色字体，更清晰 */
-  border: 1px solid transparent;
+  margin-bottom: 8px;
+  height: 50px;
+  color: #606266;
 }
 
-/* 悬浮状态 */
-.job-item:hover {
-  background: rgba(0, 122, 255, 0.08); 
-  color: #1c1c1e;
+:deep(.el-menu-item:hover) {
+  background-color: #f0fdf9; /* 极淡的绿色 hover */
+  color: #303133;
 }
 
-/* 选中状态 */
-.job-item.active {
-  background: rgba(0, 122, 255, 0.2); 
-  color: #007aff; 
+/* 选中态：仿照图片的青绿色 */
+:deep(.el-menu-item.is-active) {
+  background-color: #eaf7f4; 
+  color: #4b9e88; /* 图片中的青绿色文字 */
   font-weight: 600;
-  border-color: rgba(0, 122, 255, 0.4);
-  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.3); /* 微光效果 */
 }
 
-/* 支持平滑动画 */
-.job-item,
-.job-item.active,
-.job-item:hover {
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* 右侧内容 */
-.job-detail {
-  flex: 1;
+/* 右侧内容区 */
+.content-area {
   padding: 40px;
-  overflow-y: auto;
-  color: #1f2937;
-}
-
-.job-detail h2 {
-  font-size: 26px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.job-detail h3 {
-  margin-top: 30px;
-  margin-bottom: 10px;
-  color: #1f2937;
-}
-
-/* 面试官列表 */
-.interviewer-box {
   display: flex;
-  flex-wrap: wrap;
-  gap: 28px;
-  margin-top: 20px;
+  flex-direction: column;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-/* 面试官卡片 */
-.interviewer-card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 14px;
-  width: 220px;
+.header-section {
   text-align: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s;
+  margin-bottom: 30px;
 }
 
-.interviewer-card:hover {
-  transform: translateY(-4px);
+.page-title {
+  font-size: 28px;
+  color: #303133;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
-.avatar {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.name {
-  font-size: 17px;
-  margin-top: 12px;
-  font-weight: 600;
-}
-
-.title {
+.page-desc {
   font-size: 14px;
-  color: #666;
+  color: #909399;
 }
 
-.empty {
-  margin-top: 80px;
-  font-size: 30px;
+/* 核心大卡片 */
+.detail-card {
+  border-radius: 16px;
+  border: 1px solid #e4e7ed;
+  /* 柔和的阴影 */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); 
+}
+
+:deep(.el-card__header) {
+  padding: 24px 30px;
+  border-bottom: 1px solid #f2f6fc;
+}
+
+:deep(.el-card__body) {
+  padding: 30px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.job-title-large {
+  font-size: 22px;
+  font-weight: 600;
+  color: #303133;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.job-desc-text {
+  font-size: 14px;
+  color: #606266;
+  margin: 0;
+}
+
+/* 面试官区域 */
+.section-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 20px;
+  padding-left: 10px;
+  border-left: 4px solid #4b9e88; /* 青绿色装饰条 */
+  line-height: 1;
+}
+
+.interviewer-card-wrapper {
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: transform 0.3s ease;
+}
+
+.interviewer-card-wrapper:hover {
+  transform: translateY(-5px);
+}
+
+.interviewer-card-item {
+  border-radius: 12px;
+  border: 1px solid #ebeef5;
+  background: #fdfdfd;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  color: #2f2e2e;
+  padding: 10px 0;
+  position: relative;
+}
+
+.custom-avatar {
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 16px;
+}
+
+.text-info .p-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.text-info .p-title {
+  font-size: 12px;
+  color: #909399;
+  background-color: #f4f4f5;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.action-icon {
+  margin-top: 15px;
+  opacity: 0;
+  color: #4b9e88;
+  transition: opacity 0.3s;
+}
+
+.interviewer-card-wrapper:hover .action-icon {
+  opacity: 1;
 }
 </style>

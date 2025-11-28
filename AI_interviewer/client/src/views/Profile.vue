@@ -1,222 +1,322 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { 
+  ArrowLeft, 
+  User, 
+  Setting, 
+  Help, 
+  InfoFilled, 
+  Iphone, 
+  Message, 
+  Location,
+  OfficeBuilding,
+  Edit
+} from '@element-plus/icons-vue'
+import localAvatar from "../img/log.png"
 
 const router = useRouter()
 
+// 模拟用户信息数据
+const userInfo = reactive({
+  username: 'Admin User',
+  avatar: localAvatar,
+  phone: '183-5501-2816',
+  email: 'frontend@example.com',
+  department: '产品研发部 / 前端组',
+  location: '北京市朝阳区',
+  role: '高级开发工程师'
+})
+
+// 当前选中的菜单
+const activeMenu = ref('1')
+
 const goBack = () => {
-    router.go(-1) // 返回上一页Home
+    router.go(-1) 
+}
+
+const handleLogout = () => {
+  // 模拟退出逻辑
+  console.log('User logged out')
 }
 </script>
 
 <template>
-    <header class="top-bar">
-    <div class="back-wrapper" @click="goBack">
-      <i class="arrow"></i>
-      返回上一页
-    </div>
-    <div class="title">个人中心</div>
-  </header>
-  <div class="account-page">
-    <!-- 左侧导航 -->
-    <aside class="sidebar">
-      <div class="menu-item active">账号信息</div>
-      <!-- <div class="menu-item">软件设置</div> -->
-      <div class="menu-item">帮助中心</div>
-      <div class="menu-item">关于我们</div>
-    </aside>
-
-    <!-- 右侧主体 -->
-    <main class="content">
-      <div class="user-section">
-        <div class="user-header">
-            <img src="../img/log.png" alt = 'logo'class="avatar" >
-            <span class="username">Username</span>
-        </div>
-        <!-- <img class="avatar" src="/duck.png" alt="avatar" /> -->
+  <el-container class="layout-container">
+    <!-- 左侧导航栏 -->
+    <el-aside width="240px" class="custom-aside">
+      <div class="aside-header">
+        <div class="logo-text">个人中心</div>
       </div>
+      
+      <el-menu
+        :default-active="activeMenu"
+        class="custom-menu"
+      >
+        <el-menu-item index="1">
+          <el-icon><User /></el-icon>
+          <span>账号信息</span>
+        </el-menu-item>
+        <el-menu-item index="2">
+          <el-icon><Setting /></el-icon>
+          <span>系统设置</span>
+        </el-menu-item>
+        <el-menu-item index="3">
+          <el-icon><Help /></el-icon>
+          <span>帮助中心</span>
+        </el-menu-item>
+        <el-menu-item index="4">
+          <el-icon><InfoFilled /></el-icon>
+          <span>关于我们</span>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
 
-      <!-- 账号信息 -->
-      <div class="info-card">
-        <div class="info-row">
-          <div class="label">手机号</div>
-          <div class="value">18355012816</div>
+    <!-- 右侧主体内容 -->
+    <el-container>
+      <!-- 顶部返回栏 -->
+      <el-header class="custom-header">
+        <el-page-header @back="goBack" title="返回">
+          <template #content>
+            <span class="header-title"> 账号详情 </span>
+          </template>
+        </el-page-header>
+      </el-header>
+
+      <el-main class="main-content">
+        <div class="content-wrapper">
+          <!-- 用户概览卡片 -->
+          <el-card class="profile-card" shadow="never">
+            <div class="profile-header">
+              <el-avatar :size="80" :src="userInfo.avatar" class="user-avatar" />
+              <div class="profile-meta">
+                <h2 class="user-name">{{ userInfo.username }}</h2>
+                <el-tag type="success" effect="plain" round size="small">{{ userInfo.role }}</el-tag>
+              </div>
+              <el-button type="primary" :icon="Edit" plain round class="edit-btn">编辑资料</el-button>
+            </div>
+
+            <el-divider border-style="dashed" />
+
+            <!-- 详细信息列表 -->
+            <el-descriptions
+              class="custom-descriptions"
+              :column="1"
+              size="large"
+              border
+            >
+              <el-descriptions-item>
+                <template #label>
+                  <div class="cell-item">
+                    <el-icon><Iphone /></el-icon>
+                    手机号码
+                  </div>
+                </template>
+                {{ userInfo.phone }}
+              </el-descriptions-item>
+
+              <el-descriptions-item>
+                <template #label>
+                  <div class="cell-item">
+                    <el-icon><Message /></el-icon>
+                    电子邮箱
+                  </div>
+                </template>
+                {{ userInfo.email }}
+              </el-descriptions-item>
+
+              <el-descriptions-item>
+                <template #label>
+                  <div class="cell-item">
+                    <el-icon><OfficeBuilding /></el-icon>
+                    所属部门
+                  </div>
+                </template>
+                {{ userInfo.department }}
+              </el-descriptions-item>
+
+              <el-descriptions-item>
+                <template #label>
+                  <div class="cell-item">
+                    <el-icon><Location /></el-icon>
+                    办公地点
+                  </div>
+                </template>
+                {{ userInfo.location }}
+              </el-descriptions-item>
+            </el-descriptions>
+
+            <!-- 退出按钮区域 -->
+            <div class="action-area">
+              <el-button type="danger" plain class="logout-btn" @click="handleLogout">
+                退出登录
+              </el-button>
+            </div>
+          </el-card>
         </div>
-
-        <div class="info-row">
-          <div class="label">邮箱</div>
-          <div class="value gray">暂不支持</div>
-        </div>
-
-        <el-button type="danger" class="logout-btn">退出登录</el-button>
-      </div>
-    </main>
-  </div>
+      </el-main>
+    </el-container>
+  </el-container>
 </template>
 
-
 <style scoped>
-
-/* 顶栏 */
-.top-bar {
-  position: relative;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  background: rgba(245, 246, 247, 0.85); 
-  backdrop-filter: saturate(180%) blur(20px);
-  padding: 0 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08); 
-}
-
-.back-wrapper {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  color: #3a3a3c;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 8px;
-  transition: 0.2s;
-}
-
-.back-wrapper:hover {
-  background: rgba(0,0,0,0.06); /* mac 的浅 hover 效果 */
-}
-
-.title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 17px;
-  font-weight: 600;
-  color: #1c1c1e; 
-}
-
-.arrow {
-  width: 10px;
-  height: 10px;
-  border-left: 2px solid #555;
-  border-bottom: 2px solid #555;
-  transform: rotate(45deg);
-  margin-top: -1px;
-}
-
-/* 整体布局背景 */
-.account-page {
-  display: flex;
+/* 布局容器 */
+.layout-container {
   height: 100vh;
-  background: #F5F5F7; /* macOS 系统偏白浅灰 */
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  background-color: #f7f9fc; /* 统一的灰蓝背景 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 左侧导航栏 */
-.sidebar {
-  width: 200px;
-  padding-top: 40px;
-  border-right: 1px solid rgba(0,0,0,0.06);
-  background: #F9F9FB;
+/* 左侧侧边栏 */
+.custom-aside {
+  background: #ffffff;
+  border-right: 1px solid #e4e7ed;
+  display: flex;
+  flex-direction: column;
 }
 
-.menu-item {
-  padding: 15px 25px;
-  font-size: 15px;
-  color: #444;
-  cursor: pointer;
-  border-radius: 12px;
-  margin: 6px 10px;
-  transition: 0.2s;
-}
-
-.menu-item:hover {
-  background: rgba(0,0,0,0.05);
-}
-
-.menu-item.active {
-  background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  font-weight: 500;
-  color: #111;
-}
-
-/* 右侧内容区 */
-.content {
-  flex: 1;
-  padding: 40px;
-}
-
-.user-section {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.user-header {
+.aside-header {
+  height: 60px;
   display: flex;
   align-items: center;
-  flex-direction: column;
   justify-content: center;
-  margin-top: 10px;
+  border-bottom: 1px solid #f2f6fc;
 }
 
-.avatar {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* mac 风格阴影 */
-  background: white;
-}
-
-.username {
-  margin-top: 12px;
+.logo-text {
   font-size: 18px;
-  font-weight: 500;
-  color: #1c1c1e;
+  font-weight: 700;
+  color: #303133;
 }
 
-/* 信息卡片整体风格 */
-.info-card {
-  background: white;
-  padding: 32px;
-  border-radius: 18px;  /* mac 风格偏大圆角 */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-  max-width: 520px;
-  margin: 0 auto;
+/* 菜单样式定制 - 保持青绿色风格 */
+.custom-menu {
+  border-right: none;
+  padding: 10px;
 }
 
-.info-row {
+:deep(.el-menu-item) {
+  border-radius: 8px;
+  margin-bottom: 4px;
+  color: #606266;
+}
+
+:deep(.el-menu-item:hover) {
+  background-color: #f0fdf9;
+}
+
+:deep(.el-menu-item.is-active) {
+  background-color: #eaf7f4;
+  color: #4b9e88; /* 青绿色 */
+  font-weight: 600;
+}
+
+/* 顶部 Header */
+.custom-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e4e7ed;
   display: flex;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  align-items: center;
+  padding: 0 24px;
+  height: 60px;
 }
 
-.info-row:last-child {
-  border-bottom: none;
+.header-title {
+  font-weight: 600;
+  color: #303133;
 }
 
-.label {
-  font-size: 15px;
-  color: #3a3a3c;
+/* 主内容区 */
+.main-content {
+  padding: 30px;
+  display: flex;
+  justify-content: center;
 }
 
-.value {
-  font-size: 15px;
-  color: #1c1c1e;
-}
-
-.value.gray {
-  color: #8e8e93;
-}
-
-/* 按钮样式（更 mac） */
-.logout-btn {
-  margin-top: 30px;
+.content-wrapper {
   width: 100%;
-  border-radius: 10px !important;
-  font-size: 15px;
-  padding: 12px 0;
+  max-width: 800px;
+}
+
+/* 资料卡片 */
+.profile-card {
+  border-radius: 16px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); /* 柔和阴影 */
+  overflow: visible; /* 防止阴影被切 */
+}
+
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0 20px;
+  position: relative;
+}
+
+.user-avatar {
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.profile-meta {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.user-name {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.edit-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  --el-button-text-color: #4b9e88;
+  --el-button-border-color: #bcebdc;
+  --el-button-hover-bg-color: #eaf7f4;
+}
+
+/* 描述列表定制 */
+.custom-descriptions {
+  margin-top: 20px;
+}
+
+:deep(.el-descriptions__cell) {
+  padding: 16px 20px !important;
+}
+
+:deep(.el-descriptions__label) {
+  width: 140px;
+  color: #909399;
+  background-color: #fafafa; /* 标签背景微灰 */
+}
+
+:deep(.el-descriptions__content) {
+  color: #303133;
+  font-weight: 500;
+}
+
+.cell-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 底部按钮 */
+.action-area {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.logout-btn {
+  width: 200px;
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 500;
 }
 </style>

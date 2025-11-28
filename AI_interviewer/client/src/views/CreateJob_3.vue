@@ -38,7 +38,7 @@ const startInterview = () => {
         <el-icon class="step-arrow"><ArrowRight /></el-icon>
         <span class="step-item finished">选择简历</span>
         <el-icon class="step-arrow"><ArrowRight /></el-icon>
-        <span class="step-item active">准备完成</span>
+        <span class="step-item active">岗位推荐</span>
       </div>
     </div>
 
