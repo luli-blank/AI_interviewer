@@ -8,7 +8,8 @@ import {
   Setting, 
   Document, 
   DataAnalysis, 
-  ArrowDown 
+  ArrowDown,
+  Female
 } from '@element-plus/icons-vue'
 
 // 引入本地图片
@@ -62,6 +63,12 @@ const handleSelect = (key: string) => {
               <span class="menu-text">岗位推荐</span>
             </el-menu-item>
 
+            <!-- 性格测试 -->
+            <el-menu-item index="Character_test" >
+              <el-icon><Female /></el-icon>
+              <span class="menu-text">性格测试</span>
+            </el-menu-item>
+
             <!-- 面试演练 -->
             <el-menu-item index="Interview_practice">
               <el-icon><VideoPlay /></el-icon>
@@ -69,7 +76,7 @@ const handleSelect = (key: string) => {
             </el-menu-item>
 
             <!-- 面试复盘 -->
-            <el-menu-item index="Dashboard" >
+            <el-menu-item index="Interview_Review" >
               <el-icon><DataAnalysis /></el-icon>
               <span class="menu-text">面试复盘</span>
             </el-menu-item>
@@ -86,7 +93,7 @@ const handleSelect = (key: string) => {
         <div class="right-actions">
           <el-dropdown trigger="click">
             <div class="user-avatar-box">
-              <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
+              <el-avatar :size="32" :src="logoImg" />
               <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </div>
             <template #dropdown>
@@ -288,7 +295,6 @@ const handleSelect = (key: string) => {
   .header-inner {
     padding: 0 12px;
   }
-  
-  /* 注意：此处删除了原本重复的滚动条样式，统一使用上方的全局定义 */
+
 }
 </style>
