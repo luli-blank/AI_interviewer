@@ -88,6 +88,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { getQuestions } from '../api/Character_test_writer' 
 // 如果你安装了 axios，建议使用 import axios from 'axios'
 
 // --- 1. 定义接口 ---
@@ -117,50 +118,24 @@ const rules = reactive<FormRules>({})
 const fetchQuestions = async () => {
   pageLoading.value = true
   try {
-    // ==========================================
-    // 模拟后端请求 (实际开发中请替换为真实 API)
-    // ==========================================
-    
-    // const response = await axios.get('/api/survey/questions')
-    // const data = response.data
-    
-    // 这里我用 Promise 模拟一个 1秒 的网络延迟
-    const mockData: SurveyQuestion[] = await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 'q_backend_1',
-            title: '（来自后端）您的首选开发语言是？',
-            required: true,
-            options: [
-              { label: 'JavaScript / TypeScript', value: 'js' },
-              { label: 'Java', value: 'java' },
-              { label: 'Python', value: 'python' },
-              { label: 'Go / Rust', value: 'go_rust' }
-            ]
-          },
-          {
-            id: 'q_backend_2',
-            title: '（来自后端）您通常在哪个平台部署应用？',
-            required: true,
-            options: [
-              { label: 'AWS / Azure / GCP', value: 'cloud' },
-              { label: 'Vercel / Netlify', value: 'serverless' },
-              { label: '自建服务器 (Linux)', value: 'self_host' }
-            ]
-          }
-        ])
-      }, 800)
-    })
+    // 1. 发起请求
+    const response = await getQuestions()
 
-    questions.value = mockData
-    
-    // 获取数据后，初始化表单
-    initForm() 
+    // 2. 解析数据
+    // 注意：不要写 response.data.code，直接写 response.code
+    if (response && response.code === 200) {
+      // 赋值：也不要写 response.data.data，直接 response.data
+      questions.value = response.data 
+      
+      initForm() // 初始化表单
+    } else {
+      // 错误提示：也不要写 response.data.msg，直接 response.msg
+      ElMessage.error(response.msg || '获取数据异常')
+    }
 
   } catch (error) {
-    console.error('获取问卷失败:', error)
-    ElMessage.error('无法加载问卷数据，请检查网络连接')
+    console.error('API Error:', error)
+    ElMessage.error('无法连接到服务器')
   } finally {
     pageLoading.value = false
   }

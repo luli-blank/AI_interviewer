@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from app.api.interviewee_api import Login_api   
 from app.db.session import engine, Base
 from app.models.user import User 
+from app.api.interviewee_api import Character_test_writer_api 
 app = FastAPI()
 
 # # ==========================================
@@ -35,6 +36,6 @@ app.add_middleware(
 
 app.include_router(Login_api.router, prefix="/api/interviewee",tags=["interviewee"])
 app.include_router(Login_api.router, prefix="/api/interviewee", tags=["interviewee"])
- 
+app.include_router(Character_test_writer_api.router, prefix="/api/interviewee", tags=["Interviewee Survey"])
 # 启动命令（在终端运行）：终端路径需要抵达backstage
 # uvicorn app.api.main_api:app --reload --port 8000
