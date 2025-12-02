@@ -13,6 +13,8 @@ const Interview_Review = () => import('../views/Interview_Review.vue')
 const Profile = () => import('../views/Profile.vue')
 const Interview = () => import('../views/Interview.vue')
 const CharacterTest = () => import('../views/Character_test.vue')
+const CharacterTestWirte = () => import('../views/Character_test_write.vue')
+const InterviewCharacter = () => import('../views/Character_test_video.vue')
 
 const routes: Array<RouteRecordRaw> = [
   { 
@@ -75,6 +77,16 @@ const routes: Array<RouteRecordRaw> = [
         name : 'Character_test',
         component: CharacterTest// 懒加载引入
       },
+      {
+        path:'/CHaracter_test_write',
+        name:'Character_test_write',
+        component:CharacterTestWirte
+      },
+      {
+        path:'/Interview_character',
+        name:'Interview_character',
+        component:InterviewCharacter
+      }
     ]
   },
   {

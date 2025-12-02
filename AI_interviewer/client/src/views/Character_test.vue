@@ -7,15 +7,16 @@ import {
   Timer,
   DataLine
 } from '@element-plus/icons-vue'
+import { ro } from 'element-plus/es/locales.mjs'
 
 const router = useRouter()
 
 const handleStartForm = () => {
-  console.log('用户点击了填表测试')
+  router.push('/CHaracter_test_write')
 }
 
 const handleStartChat = () => {
-  console.log('用户点击了对话测试')
+  router.push('/Interview_character')
 }
 </script>
 
@@ -68,7 +69,7 @@ const handleStartChat = () => {
           </div>
         </div>
 
-        <!-- 3. 右侧卡片 (延迟 0.2s 出现) -->
+        <!-- 3. 右侧卡片 (延迟 0.1s 出现) -->
         <div 
           class="glass-card chat-theme animate-in" 
           style="animation-delay: 0.2s"
