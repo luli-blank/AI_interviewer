@@ -4,12 +4,29 @@ import { useRouter, useRoute } from 'vue-router'
 
 const route = useRoute() 
 
-// 面试累计时长
-const totalTimer = ref('00:12:45');
-let timerInterval = null;
+// --- 弹窗与启动控制 ---
+const isShowStartModal = ref(true); // 控制弹窗显示
+const isInterviewStarted = ref(false); // 控制面试是否正式开始
 
-const interviewerName = route.query.name
-const interviewerTitle = route.query.title
+// 点击“确认”开始面试
+const handleStartInterview = () => {
+  isShowStartModal.value = false;
+  isInterviewStarted.value = true;
+  
+  // 开始各项计时和逻辑
+  startTotalTimer();
+  if (isSubtitleOn.value) {
+    startSubtitleSimulation();
+  }
+};
+
+// --- 面试基础信息 ---
+const interviewerName = route.query.name || '面试官'
+const interviewerTitle = route.query.title || '资深产品专家'
+
+// 面试累计时长
+const totalTimer = ref('00:00:00'); // 初始设为0
+let timerInterval = null;
 
 // 自身控制
 const isSelfMuted = ref(false); // 自身麦克风状态
@@ -18,29 +35,8 @@ const isSelfVideoOff = ref(false); // 自身摄像头状态
 // 面试笔记
 const interviewNotes = ref('');
 
-// 页面加载启动累计计时
-onMounted(() => {
-  startTotalTimer();
-});
-
-// 页面卸载清除计时器
-onUnmounted(() => {
-  clearInterval(timerInterval);
-});
-
-// 累计计时逻辑（时:分:秒）
-const startTotalTimer = () => {
-  // 初始时间 00:12:45 转为秒
-  let time = 12 * 60 + 45;
-  timerInterval = setInterval(() => {
-    time++;
-    const hours = Math.floor(time / 3600).toString().padStart(2, '0');
-    const minutes = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
-    const seconds = (time % 60).toString().padStart(2, '0');
-    totalTimer.value = `${hours}:${minutes}:${seconds}`;
-  }, 1000);
-
-  const isSubtitleOn = ref(true); // 字幕开关
+// --- 字幕相关逻辑 (修复了原代码的作用域嵌套问题) ---
+const isSubtitleOn = ref(true); // 字幕开关
 const speed = ref(1); // 字幕滚动速度
 const subtitleLines = ref([
   '你好，很高兴今天能和你进行这次面试。',
@@ -51,22 +47,41 @@ const currentSubtitle = ref(''); // 实时字幕
 const subtitleContent = ref(null); // 字幕容器ref
 let subtitleInterval = null; // 字幕生成定时器
 
-// 页面加载时新增：启动字幕模拟
-onMounted(() => {
-  // ... 原有代码保留，新增以下
-  if (isSubtitleOn.value) {
-    startSubtitleSimulation();
-  }
-});
+// 模拟话术库 (原代码中未定义，这里补全以防报错)
+const interviewScript = [
+  "看到你的简历上提到你对数据分析很感兴趣，能举个例子吗？",
+  "在团队合作中，如果开发认为你的需求无法实现，你会怎么处理？",
+  "你觉得什么样的产品才算是一个好产品？",
+  "对于我们公司的这款App，你有什么改进建议吗？",
+  "好的，今天的面试就到这里，后续HR会联系你。"
+];
 
-// 页面卸载时新增：清除字幕定时器
+// 页面卸载清除计时器
 onUnmounted(() => {
-  // ... 原有代码保留，新增以下
+  clearInterval(timerInterval);
   clearInterval(subtitleInterval);
 });
 
-// 新增：字幕开关切换
+// 累计计时逻辑（时:分:秒）
+const startTotalTimer = () => {
+  let time = 0; // 从0开始
+  // 初始化显示
+  totalTimer.value = '00:00:00';
+  
+  timerInterval = setInterval(() => {
+    time++;
+    const hours = Math.floor(time / 3600).toString().padStart(2, '0');
+    const minutes = Math.floor((time % 3600) / 60).toString().padStart(2, '0');
+    const seconds = (time % 60).toString().padStart(2, '0');
+    totalTimer.value = `${hours}:${minutes}:${seconds}`;
+  }, 1000);
+};
+
+// 字幕开关切换
 const toggleSubtitle = () => {
+  // 只有面试开始后，开关才生效
+  if (!isInterviewStarted.value) return;
+
   if (isSubtitleOn.value) {
     startSubtitleSimulation();
   } else {
@@ -75,7 +90,7 @@ const toggleSubtitle = () => {
   }
 };
 
-// 新增：模拟字幕实时生成
+// 模拟字幕实时生成
 const startSubtitleSimulation = () => {
   clearInterval(subtitleInterval);
   // 根据速度计算间隔（默认1倍速=3秒/句，速度越快间隔越短）
@@ -102,8 +117,6 @@ const startSubtitleSimulation = () => {
   }, interval);
 };
 
-};
-
 // 自身麦克风切换
 const toggleSelfMute = () => {
   isSelfMuted.value = !isSelfMuted.value;
@@ -113,21 +126,35 @@ const toggleSelfMute = () => {
 const toggleSelfVideo = () => {
   isSelfVideoOff.value = !isSelfVideoOff.value;
 };
-
-
 </script>
 
 <template>
   <div class="interview-practice">
-    <!-- 面试演练主区域 -->
-    <div class="practice-container">
+    
+    <!-- 新增：开始面试确认弹窗 -->
+    <div v-if="isShowStartModal" class="start-modal-overlay">
+      <div class="start-modal">
+        <div class="modal-icon">📹</div>
+        <h3>准备好开始面试了吗？</h3>
+        <p>点击确认后，面试官将开始提问并开始计时。</p>
+        <button class="start-btn" @click="handleStartInterview">确认开始</button>
+      </div>
+    </div>
+
+    <!-- 面试演练主区域 (添加 blur 类实现背景模糊效果) -->
+    <div class="practice-container" :class="{ 'blur-bg': isShowStartModal }">
       <!-- 面试基础信息 -->
       <div class="practice-header">
         <div class="job-info">
-          <h2>产品经理（校招）- 实时面试演练</h2>
-          <p>面试状态: <span class="status-text">正在进行</span> · 累计时长: <span class="timer">{{ totalTimer }}</span></p>
+          <h2>性格测试</h2>
+          <p>面试状态: 
+            <span class="status-text" :class="{'pending': !isInterviewStarted}">
+              {{ isInterviewStarted ? '正在进行' : '等待开始' }}
+            </span> 
+            · 累计时长: <span class="timer">{{ totalTimer }}</span>
+          </p>
         </div>
-        <div class="status-tag">进行中</div>
+        <div class="status-tag">{{ isInterviewStarted ? '进行中' : '准备中' }}</div>
       </div>
 
       <!-- 核心面试区域：面试官+实时交互 -->
@@ -138,14 +165,17 @@ const toggleSelfVideo = () => {
           <!-- 视频/语音交互区 -->
           <div class="video-area">
             <div class="interviewer-video">
+              <!-- 根据状态显示不同内容 -->
               <img 
+                v-if="isInterviewStarted && !isSelfVideoOff"
                 src="https://via.placeholder.com/600x400?text=面试官视频画面" 
                 alt="面试官视频" 
-                v-if="!isVideoOff"
                 class="video-frame"
               />
               <div class="video-off" v-else>
-                <span class="video-off-text">面试官视频已关闭</span>
+                <span class="video-off-text">
+                  {{ isInterviewStarted ? '面试官视频已关闭' : '面试尚未开始' }}
+                </span>
               </div>
             </div>
             <div class="self-video">
@@ -173,7 +203,8 @@ const toggleSelfVideo = () => {
          <!-- 面试官信息展示区 -->
         <div class="interviewer-panel">
           <div class="interviewer-avatar">
-            <img src="../img/log.png" alt="面试官头像" />
+            <!-- 替换为你的本地路径或占位图 -->
+            <img src="https://via.placeholder.com/64" alt="面试官头像" />
           </div>
           <div class="interviewer-info">
             <h3>{{interviewerName}}</h3>
@@ -192,11 +223,14 @@ const toggleSelfVideo = () => {
             </div>
             <div class="subtitle-content" ref="subtitleContent">
               <!-- 字幕滚动展示 -->
-            <p v-for="(line, index) in subtitleLines" :key="index" class="subtitle-line">
+              <p v-for="(line, index) in subtitleLines" :key="index" class="subtitle-line">
                 {{ line }}
               </p>
               <!-- 实时新增字幕的占位 -->
-              <p class="subtitle-line current">{{ currentSubtitle }}</p>
+              <p class="subtitle-line current">
+                <span v-if="!isInterviewStarted" style="color:#999; font-style:italic;">等待面试开始...</span>
+                {{ currentSubtitle }}
+              </p>
             </div>
             <div class="subtitle-toggle">
               <label class="switch">
@@ -213,11 +247,80 @@ const toggleSelfVideo = () => {
   </div>
 </template>
 
-
 <style scoped>
 .interview-practice {
   min-height: 100vh;
   background-color: #f8fafc;
+  position: relative; /* 为绝对定位的弹窗做参考 */
+}
+
+/* --- 新增：弹窗样式 --- */
+.start-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* 半透明遮罩 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* 保证在最上层 */
+  backdrop-filter: blur(4px); /* 背景模糊效果 */
+}
+
+.start-modal {
+  background-color: #fff;
+  padding: 32px 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  animation: modalPop 0.3s ease-out;
+}
+
+.modal-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.start-modal h3 {
+  margin: 0 0 12px 0;
+  color: #1f2937;
+  font-size: 22px;
+}
+
+.start-modal p {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.start-btn {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.start-btn:hover {
+  background-color: #1d4ed8;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* 背景模糊辅助类 */
+.blur-bg {
+  filter: blur(2px);
+  pointer-events: none; /* 弹窗出现时，禁止点击背景内容 */
 }
 
 /* 演练容器 */
@@ -225,6 +328,7 @@ const toggleSelfVideo = () => {
   max-width: 1200px;
   margin: 40px auto;
   padding: 0 20px;
+  transition: filter 0.3s;
 }
 
 /* 面试基础信息 */
@@ -251,6 +355,9 @@ const toggleSelfVideo = () => {
 .status-text {
   color: #10b981;
   font-weight: 500;
+}
+.status-text.pending {
+  color: #f59e0b; /* 黄色表示等待中 */
 }
 .status-tag {
   background-color: #eff6ff;
@@ -286,7 +393,6 @@ const toggleSelfVideo = () => {
 }
 
 .interviewer-avatar img {
-  border-radius: 50%;
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -325,23 +431,6 @@ const toggleSelfVideo = () => {
   background-color: #eff6ff;
   padding: 2px 8px;
   border-radius: 4px;
-}
-.interviewer-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.control-btn {
-  padding: 8px 0;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  background-color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-.control-btn:hover {
-  background-color: #f3f4f6;
 }
 
 /* 实时面试交互区 */
@@ -393,6 +482,7 @@ const toggleSelfVideo = () => {
   border-radius: 6px;
   overflow: hidden;
   border: 2px solid #fff;
+  z-index: 10;
 }
 .self-video-frame {
   width: 100%;
@@ -427,67 +517,6 @@ const toggleSelfVideo = () => {
   border-color: #ef4444;
 }
 
-/* 面试笔记区 */
-.interview-notes {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.notes-title {
-  font-size: 16px;
-  color: #1f2937;
-  margin: 0 0 12px 0;
-}
-.notes-input {
-  width: 100%;
-  min-height: 120px;
-  padding: 12px 16px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  resize: vertical;
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-.save-notes {
-  padding: 8px 16px;
-  background-color: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-/* 面试辅助工具 */
-.interview-tools {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  padding: 16px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.tool-btn {
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  background-color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-}
-.tool-btn:hover {
-  background-color: #f3f4f6;
-}
-.icon {
-  font-size: 16px;
-}
 /*面试官字幕样式*/ 
 .interviewer-subtitle {
   border-top: 1px solid #eee;
@@ -503,24 +532,6 @@ const toggleSelfVideo = () => {
   font-size: 16px;
   color: #1f2937;
   margin: 0;
-}
-.subtitle-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-.subtitle-btn {
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: #fff;
-  cursor: pointer;
-  font-size: 12px;
-}
-.subtitle-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 .subtitle-content {
   height: 180px;
@@ -588,8 +599,4 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(20px);
 }
-.toggle-text {
-  font-size: 13px;
-}
-
 </style>
