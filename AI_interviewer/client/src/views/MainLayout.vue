@@ -11,7 +11,7 @@ import {
   ArrowDown,
   Female
 } from '@element-plus/icons-vue'
-
+import { ElMessage } from 'element-plus'
 // 引入本地图片
 import logoImg from '../img/log.png' 
 
@@ -27,6 +27,20 @@ const handleSelect = (key: string) => {
     router.push({ name: key })
   }
 }
+
+const handleLogout = () => {
+  // 1. 清除本地存储的 Token
+  localStorage.removeItem('token') 
+  // 如果你有存储用户信息，建议一并清除，例如：
+  localStorage.removeItem('userInfo')
+
+  // 2. (可选) 给用户一个提示
+  ElMessage.success('退出登录成功')
+
+  // 3. 跳转回登录页
+  router.replace({ name: 'Login' }) 
+}
+
 </script>
 
 <template>
@@ -99,7 +113,7 @@ const handleSelect = (key: string) => {
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="router.push({name:'Profile'})">个人中心</el-dropdown-item>
-                <el-dropdown-item divided>退出登录</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>

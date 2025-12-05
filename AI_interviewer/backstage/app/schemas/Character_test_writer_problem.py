@@ -28,6 +28,5 @@ class QuestionAnswerPair(BaseModel):
     answer_text: str
 
 class SurveySubmissionSchema(BaseModel):
-#    user_id: str
     submission_time: datetime
     answers: List[QuestionAnswerPair]

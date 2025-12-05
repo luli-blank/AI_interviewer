@@ -10,7 +10,7 @@ from app.models.Character_question import Character_question
 from app.db.session import get_db
 from app.schemas.Character_test_writer_problem import SurveySubmissionSchema
 from app.core.get_user import get_current_user_id 
-
+from app.models.Character_answer import Character_answer  # 导入你的模型
 
 router = APIRouter()
 
@@ -71,7 +71,8 @@ async def get_survey_questions(db: AsyncSession = Depends(get_db)):
 @router.post("/submit_survey")
 async def submit_survey_data(
     payload: SurveySubmissionSchema,
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     接收前端提交的完整问答对
@@ -79,10 +80,26 @@ async def submit_survey_data(
     print(f"用户 ID: {current_user_id}")
     print(f"收到提交: {payload.submission_time}")
     
-    # 遍历打印，或者存入数据库
+    qa_data_list = []
     for item in payload.answers:
-        print(f"问题: {item.question_text} | 回答: {item.answer_text}")
-    
-    # TODO: 调用 Service 层将数据存入 MySQL 或 Redis
-    
-    return {"code": 200, "msg": "提交成功", "data": None} 
+        qa_data_list.append({
+            "question": item.question_text,
+            "answer": item.answer_text
+        })
+
+    new_record = Character_answer(
+            userId=current_user_id,
+            question_and_answer=qa_data_list,  # 直接存入列表，底层会自动转 JSON
+            submissionTime=payload.submission_time
+        )
+    db.add(new_record)
+
+    try:
+        await db.commit()
+        # 如果是新增记录，可以 refresh 一下获取生成的主键ID（可选）
+    except Exception as e:
+        await db.rollback() # 出错回滚
+        print(f"数据库保存失败: {e}")
+        return {"code": 500, "msg": "服务器内部错误，保存失败", "data": None}
+
+    return {"code": 200, "msg": "提交成功", "data": {"user_id": current_user_id}}
