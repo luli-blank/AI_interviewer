@@ -9,7 +9,7 @@ from app.core.config import settings
 # 这是一个随机生成的密钥，用于给 Token 签名，绝对不能泄露
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token 有效期 30 分钟
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # Token 有效期 30 分钟
 
 # 2. 密码哈希上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

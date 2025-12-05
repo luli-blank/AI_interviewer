@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref, nextTick } from 'vue'
+// 1. 引入必要的核心函数，特别是 toRaw
+import { reactive, ref, nextTick, onMounted, watch, toRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus' 
 import { 
@@ -11,8 +12,10 @@ import {
 
 const router = useRouter()
 
-// === 新增：定义岗位名称输入框的引用 ===
-// 用于在校验失败时获取该组件实例并调用 focus 方法
+// === 定义本地存储的 Key ===
+const STORAGE_KEY = 'interview_data_step1'
+
+// 定义岗位名称输入框的引用
 const jobNameInputRef = ref<HTMLElement | null>(null)
 
 // 表单数据
@@ -23,25 +26,50 @@ const formData = reactive({
   companyDesc: ''
 })
 
-// 路由跳转
+// === 1. 页面加载：回填数据 ===
+onMounted(() => {
+  try {
+    const savedData = localStorage.getItem(STORAGE_KEY)
+    if (savedData) {
+      const parsedData = JSON.parse(savedData)
+      // 使用 Object.assign 保持 formData 的响应性
+      Object.assign(formData, parsedData)
+    }
+  } catch (error) {
+    console.error('读取缓存出错，已自动重置:', error)
+    // 如果数据损坏，清除旧数据防止持续报错
+    localStorage.removeItem(STORAGE_KEY)
+  }
+})
+
+// === 2. 实时保存：监听数据变化 ===
+watch(formData, () => {
+  try {
+    // 【关键修复】使用 toRaw 将 Vue 的响应式 Proxy 对象转为普通 JS 对象
+    // 这一步能防止 JSON.stringify 在处理 Proxy 时可能导致的死循环或报错（即白屏原因）
+    const rawData = toRaw(formData)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rawData))
+  } catch (error) {
+    console.error('保存缓存失败:', error)
+  }
+}, { deep: true }) // deep: true 确保监听对象内部属性变化
+
+// 路由跳转：返回上一页
 const goBack = () => {
-  router.push({ name: 'Home' }) // 返回上一页
+  router.push({ name: 'Home' }) 
 }
 
+// 路由跳转：下一步
 const nextStep = () => {
-  console.log('提交数据:', formData)
+  console.log('提交数据:', toRaw(formData))
   
-  // === 修改：校验逻辑 ===
+  // 校验逻辑
   if(!formData.jobName) {
-    // 1. 使用 ElMessage 替代 alert，避免系统弹窗抢夺焦点
     ElMessage.warning('请输入岗位名称')
     
-    // 2. 强制聚焦逻辑
+    // 聚焦逻辑
     nextTick(() => {
-      // 兼容 Electron/浏览器：先强制让窗口获取焦点
       window.focus()
-      
-      // 再让具体的输入框获取焦点
       if (jobNameInputRef.value) {
         jobNameInputRef.value.focus()
       }
@@ -49,6 +77,7 @@ const nextStep = () => {
     return
   }
   
+  // 跳转到第二步（注意：这里不清除 Storage，保留数据以便用户返回修改）
   router.push({ name: 'CreateJob_2' }) 
 }
 </script>
@@ -83,7 +112,6 @@ const nextStep = () => {
       
       <!-- 岗位名称 -->
       <div class="input-group">
-        <!-- === 修改点：绑定 ref="jobNameInputRef" === -->
         <el-input 
           ref="jobNameInputRef"
           v-model="formData.jobName" 
@@ -149,7 +177,7 @@ const nextStep = () => {
 /* 页面整体背景色 - 极淡的青色 */
 .page-container {
   width: 100%;
-  height: 100%; /* 将 min-height 改为固定 height，占满屏幕 */
+  height: 100%; 
   background-color: #f7fbf9; 
   padding: 40px 20px;
   box-sizing: border-box;
@@ -233,13 +261,11 @@ const nextStep = () => {
 }
 
 /* --- 深度定制 Element Input 样式 --- */
-/* 这里使用了 :deep() 来穿透 Element Plus 的原生样式 */
-
 :deep(.custom-input .el-input__wrapper),
 :deep(.custom-input.el-textarea .el-textarea__inner) {
   background-color: white;
-  border-radius: 12px; /* 大圆角 */
-  box-shadow: 0 0 0 1px #eef0f2 inset; /* 极细的内边框 */
+  border-radius: 12px; 
+  box-shadow: 0 0 0 1px #eef0f2 inset; 
   padding: 15px 20px;
   transition: all 0.3s;
 }
@@ -252,7 +278,7 @@ const nextStep = () => {
 
 :deep(.custom-input .el-input__wrapper.is-focus),
 :deep(.custom-input.el-textarea .el-textarea__inner:focus) {
-  box-shadow: 0 0 0 1px #3a856b inset !important; /* 聚焦变成墨绿色 */
+  box-shadow: 0 0 0 1px #3a856b inset !important; 
 }
 
 /* 调整大号输入框的高度 */
@@ -266,7 +292,7 @@ const nextStep = () => {
 :deep(.custom-textarea .el-textarea__inner) {
   font-family: inherit;
   font-size: 15px;
-  resize: none; /* 禁止拖拽改变大小 */
+  resize: none; 
 }
 
 /* 调整字数统计的位置 */
@@ -321,5 +347,4 @@ const nextStep = () => {
 .next-btn:hover {
   background-color: #7da598;
 }
-
 </style>

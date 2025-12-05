@@ -1,45 +1,120 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch, toRaw } from 'vue' // 引入必要的 Hook
 import { useRouter } from 'vue-router'
 import { 
   RefreshLeft, 
   Check, 
   ArrowRight,
-  Plus,
-  UploadFilled
+  Plus
 } from '@element-plus/icons-vue'
-import type { UploadProps } from 'element-plus'
+import type { UploadProps, UploadUserFile } from 'element-plus'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+
+// === 1. 定义存储 Key ===
+const STORAGE_KEY = 'interview_data_step2'
+
+// === 2. 定义响应式数据 ===
 const resumeText = ref('')
+// 专门用于管理上传组件的文件列表，实现回显
+const fileList = ref<UploadUserFile[]>([])
+
+// === 3. 页面加载：回填数据 ===
+onMounted(() => {
+  try {
+    const savedData = localStorage.getItem(STORAGE_KEY)
+    if (savedData) {
+      const parsedData = JSON.parse(savedData)
+      
+      // 3.1 回填文本
+      if (parsedData.resumeText) {
+        resumeText.value = parsedData.resumeText
+      }
+
+      // 3.2 回填文件列表 (视觉回显)
+      // 注意：LocalStorage 存不了真正的 File 对象，这里只回显文件名
+      if (parsedData.fileName) {
+        fileList.value = [{
+          name: parsedData.fileName,
+          url: '', // 本地并没有真实 URL
+          status: 'success'
+        }]
+      }
+    }
+  } catch (error) {
+    console.error('读取缓存失败:', error)
+    localStorage.removeItem(STORAGE_KEY)
+  }
+})
+
+// === 4. 统一保存逻辑 ===
+// 将当前状态保存到 localStorage
+const saveState = () => {
+  try {
+    // 获取当前选中的第一个文件名（如果是单文件上传）
+    const currentFileName = fileList.value.length > 0 ? fileList.value[0].name : ''
+    
+    const data = {
+      resumeText: resumeText.value,
+      fileName: currentFileName
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch (error) {
+    console.error('保存状态失败', error)
+  }
+}
+
+// === 5. 监听数据变化 ===
+
+// 5.1 监听文本输入，实时保存
+watch(resumeText, () => {
+  saveState()
+})
+
+// 5.2 监听文件变化 (添加文件)
+const handleUpload: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
+  fileList.value = uploadFiles // 更新列表
+  saveState() // 保存状态
+  
+  if (uploadFile.status === 'ready') {
+    ElMessage.success(`已选择文件: ${uploadFile.name}`)
+  }
+}
+
+// 5.3 监听文件移除
+const handleRemove: UploadProps['onRemove'] = (uploadFile, uploadFiles) => {
+  fileList.value = uploadFiles // 更新列表
+  saveState() // 保存状态（此时 fileName 会变为空）
+}
 
 // === 路由跳转逻辑 ===
 const goBack = () => {
-  router.go(-1) // 返回上一页 (JobInfo)
+  router.go(-1) 
 }
 
 const nextStep = () => {
-  // 这里可以添加校验逻辑，比如检查是否上传了文件或输入了文本
-  if (!resumeText.value) {
-     // 仅作演示，实际逻辑根据需求
-     console.log('未输入文本，但可能上传了文件')
+  // 简单校验：文本和文件至少有一个
+  if (!resumeText.value && fileList.value.length === 0) {
+     ElMessage.warning('请上传简历文件或粘贴简历文本')
+     return
   }
-  // router.push({ name: 'PrepareDone' }) // 假设下一步是完成页
+  
+  // 打印最终数据（实际开发中这里可能需要构建 FormData 发给后端）
+  console.log('Step 2 提交数据:', {
+    text: resumeText.value,
+    file: fileList.value.length > 0 ? toRaw(fileList.value[0]) : null
+  })
+
   ElMessage.success('进入下一步')
   router.push({ name: 'CreateJob_3' })
-}
-
-// === 文件上传逻辑 ===
-const handleUpload: UploadProps['onChange'] = (uploadFile) => {
-  ElMessage.success(`已选择文件: ${uploadFile.name}`)
 }
 </script>
 
 <template>
   <div class="page-container">
     
-    <!-- 1. 顶部步骤条 (状态改变：第二步高亮) -->
+    <!-- 1. 顶部步骤条 -->
     <div class="steps-wrapper">
       <div class="step-pill">
         <span class="step-item finished">填写岗位信息</span>
@@ -61,19 +136,28 @@ const handleUpload: UploadProps['onChange'] = (uploadFile) => {
       
       <!-- 文件上传卡片 -->
       <div class="upload-wrapper">
+        <!-- 
+          修改点：
+          1. 绑定 v-model:file-list="fileList" 用于回显
+          2. 添加 :on-remove="handleRemove" 处理删除
+          3. :limit="1" 限制只能传一个简历
+        -->
         <el-upload
+          v-model:file-list="fileList"
           class="custom-uploader"
           drag
           action="#" 
           :auto-upload="false"
           :on-change="handleUpload"
+          :on-remove="handleRemove"
+          :limit="1" 
           :show-file-list="true"
         >
           <div class="upload-content">
             <!-- 模拟图中那个带框的十字图标 -->
             <div class="icon-box">
               <el-icon class="plus-icon"><Plus /></el-icon>
-              <!-- 四个角的装饰 (CSS实现) -->
+              <!-- 四个角的装饰 -->
               <div class="corner top-left"></div>
               <div class="corner top-right"></div>
               <div class="corner bottom-left"></div>
@@ -120,7 +204,7 @@ const handleUpload: UploadProps['onChange'] = (uploadFile) => {
 </template>
 
 <style scoped>
-/* 页面容器 - 保持背景一致 */
+/* 页面容器 */
 .page-container {
   width: 100%;
   height: 100%;
@@ -144,8 +228,8 @@ const handleUpload: UploadProps['onChange'] = (uploadFile) => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 .step-item { color: #999; font-size: 14px; font-weight: 500; }
-.step-item.active { color: #3a856b; font-weight: bold; } /* 当前激活：绿色 */
-.step-item.finished { color: #666; } /* 已完成：深灰 */
+.step-item.active { color: #3a856b; font-weight: bold; } 
+.step-item.finished { color: #666; }
 .step-arrow { color: #ccc; font-size: 12px; }
 
 /* === 标题 === */
@@ -168,10 +252,10 @@ const handleUpload: UploadProps['onChange'] = (uploadFile) => {
 }
 
 :deep(.custom-uploader .el-upload-dragger) {
-  background-color: #f6fbf9; /* 极淡的绿色背景 */
-  border: 1px dashed #c0dcd3; /* 虚线边框 */
+  background-color: #f6fbf9; 
+  border: 1px dashed #c0dcd3; 
   border-radius: 12px;
-  height: 200px; /* 增加高度 */
+  height: 200px; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,7 +273,6 @@ const handleUpload: UploadProps['onChange'] = (uploadFile) => {
   align-items: center;
 }
 
-/* 模拟十字图标和边角 */
 .icon-box {
   width: 40px;
   height: 40px;
@@ -205,7 +288,6 @@ const handleUpload: UploadProps['onChange'] = (uploadFile) => {
   color: #3a856b;
 }
 
-/* 四个角落的小折线 (装饰) */
 .corner {
   position: absolute;
   width: 8px;
@@ -222,7 +304,7 @@ const handleUpload: UploadProps['onChange'] = (uploadFile) => {
 .upload-text-main { color: #333; font-size: 15px; margin-bottom: 5px; }
 .upload-text-sub { color: #3a856b; font-size: 14px; cursor: pointer; }
 
-/* --- 文本框样式 (复用之前的逻辑) --- */
+/* --- 文本框样式 --- */
 :deep(.custom-input.el-textarea .el-textarea__inner) {
   background-color: white;
   border-radius: 12px;

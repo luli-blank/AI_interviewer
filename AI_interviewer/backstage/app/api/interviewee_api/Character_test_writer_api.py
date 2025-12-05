@@ -22,7 +22,10 @@ TOTAL_QUESTIONS_TO_FETCH = 5
 
 
 @router.get("/questions", response_model=SurveyResponse)
-async def get_survey_questions(db: AsyncSession = Depends(get_db)):
+async def get_survey_questions(
+    db: AsyncSession = Depends(get_db),
+    current_user_id: str = Depends(get_current_user_id) 
+    ):
     """
     从数据库中随机获取指定数量的问卷题目列表
     """

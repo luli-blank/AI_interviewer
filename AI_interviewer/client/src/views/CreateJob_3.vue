@@ -11,18 +11,32 @@ import {
 
 const router = useRouter()
 
+// === 定义需要清除的 LocalStorage Key ===
+// 必须与前两步代码中定义的 KEY 保持一致
+const STEP1_KEY = 'interview_data_step1'
+const STEP2_KEY = 'interview_data_step2'
+
 // === 路由跳转逻辑 ===
 const goBack = () => {
   router.go(-1) // 返回上一页 (SelectResume)
 }
 
 const startInterview = () => {
-  // 这里是整个流程的最后一步，点击提交
+  // 1. 清除本地缓存 (核心修改)
+  try {
+    localStorage.removeItem(STEP1_KEY)
+    localStorage.removeItem(STEP2_KEY)
+    console.log('流程结束，本地缓存已清空')
+  } catch (error) {
+    console.error('清空缓存失败:', error)
+  }
+
+  // 2. 提示与跳转
   ElMessage.success('配置完成，正在进入面试房间...')
   
   // 模拟跳转到正式面试页面
   setTimeout(() => {
-    // 假设你的面试页面路由叫 'InterviewRoom' 或者回到首页 'Home'
+    // 假设你的面试页面路由叫 'Going'
     router.push({ name: 'Going' }) 
   }, 1000)
 }
@@ -110,7 +124,7 @@ const startInterview = () => {
 }
 .step-item { color: #999; font-size: 14px; font-weight: 500; }
 .step-item.active { color: #3a856b; font-weight: bold; } 
-.step-item.finished { color: #3a856b; } /* 完成也是绿色，或者可以用深灰 */
+.step-item.finished { color: #3a856b; } /* 完成也是绿色 */
 .step-arrow { color: #ccc; font-size: 12px; }
 
 /* === 核心内容区 === */
@@ -161,7 +175,6 @@ const startInterview = () => {
   font-size: 80px;
   color: #3a856b;
   z-index: 2;
-  /* 阴影让它浮起来 */
   filter: drop-shadow(0 10px 15px rgba(58, 133, 107, 0.3));
 }
 
@@ -228,7 +241,7 @@ const startInterview = () => {
 .back-btn { background-color: #dbece5; color: #2c5e4f; }
 .back-btn:hover { background-color: #cce3db; }
 
-/* 开始面试按钮 - 更加显眼 */
+/* 开始面试按钮 */
 .start-btn { 
   background-color: #3a856b; 
   color: white; 
