@@ -8,6 +8,9 @@ from app.schemas.Character_test_writer_problem import SurveyQuestion, SurveyResp
 from app.models.Character_question import Character_question
 # 引入数据库会话依赖
 from app.db.session import get_db
+from app.schemas.Character_test_writer_problem import SurveySubmissionSchema
+from app.core.get_user import get_current_user_id 
+
 
 router = APIRouter()
 
@@ -63,3 +66,23 @@ async def get_survey_questions(db: AsyncSession = Depends(get_db)):
 
     # 返回符合 SurveyResponse 模型的最终结果
     return SurveyResponse(code=200, msg="success", data=questions_data)
+
+
+@router.post("/submit_survey")
+async def submit_survey_data(
+    payload: SurveySubmissionSchema,
+    current_user_id: str = Depends(get_current_user_id)
+):
+    """
+    接收前端提交的完整问答对
+    """
+    print(f"用户 ID: {current_user_id}")
+    print(f"收到提交: {payload.submission_time}")
+    
+    # 遍历打印，或者存入数据库
+    for item in payload.answers:
+        print(f"问题: {item.question_text} | 回答: {item.answer_text}")
+    
+    # TODO: 调用 Service 层将数据存入 MySQL 或 Redis
+    
+    return {"code": 200, "msg": "提交成功", "data": None} 

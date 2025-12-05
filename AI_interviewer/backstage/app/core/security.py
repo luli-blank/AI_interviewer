@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 from typing import Optional, Union
 from jose import jwt
 from passlib.context import CryptContext
-
+from app.core.config import settings
 # 1. 配置参数 (生产环境建议放在 .env 文件中)
 # 这是一个随机生成的密钥，用于给 Token 签名，绝对不能泄露
-SECRET_KEY = "CHANGE_THIS_TO_A_REALLY_LONG_RANDOM_STRING_IN_PRODUCTION"
+SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token 有效期 30 分钟
 

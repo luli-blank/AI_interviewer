@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # 项目名称 (可选，方便以后扩展)
     PROJECT_NAME: str = "AI Interviewer"
 
+    SECRET_KEY: str 
+    ALGORITHM: str
+
     # --- 2. 告诉 Pydantic 去哪里找配置 ---
     class Config:
         # 指定读取根目录下的 .env 文件

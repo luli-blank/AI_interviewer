@@ -88,7 +88,8 @@
 import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { getQuestions } from '../api/Character_test_writer' 
+import { getQuestions, submitSurvey } from '../api/Character_test_writer' 
+
 // 如果你安装了 axios，建议使用 import axios from 'axios'
 
 // --- 1. 定义接口 ---
@@ -182,35 +183,59 @@ const submitForm = async (formEl: FormInstance | undefined) => {
       submitting.value = true
       
       try {
-        // 构建要发给后端的数据 Payload
+        // --- 核心逻辑开始：数据转换 ---
+        // 我们需要遍历原始题目数组 (questions)，结合用户填写的 form 数据
+        const formattedAnswers = questions.value.map(question => {
+          // 1. 获取该题用户选中的 value (例如 "A")
+          const userSelectedValue = form[question.id];
+          
+          // 2. 在该题的 options 中找到对应的完整 label (例如 "非常同意")
+          const selectedOption = question.options.find(
+            opt => opt.value === userSelectedValue
+          );
+
+          // 3. 返回后端需要的结构
+          return {
+            question_text: question.title, // 完整的题目文字
+            answer_text: selectedOption ? selectedOption.label : '' // 完整的选项文字
+          };
+        });
+
+        // 构建最终 Payload
         const payload = {
-          answers: form,
-          timestamp: new Date().toISOString()
-        }
+          submission_time: new Date().toISOString(),
+          answers: formattedAnswers
+        };
         
-        console.log('准备提交给后端的数据:', payload)
+        console.log('转换后的完整数据:', payload);
+        // --- 核心逻辑结束 ---
 
-        // 模拟提交请求
-        // await axios.post('/api/survey/submit', payload)
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // 发送真实请求
+        const response = await submitSurvey(payload);
 
-        ElMessageBox.alert('问卷提交成功！感谢您的参与。', '完成', {
-          confirmButtonText: '关闭',
-          type: 'success',
-          callback: () => {
-            // 这里可以重置表单或者跳转页面
-            // router.push('/')
-          }
-        })
+        // 处理响应
+        if (response && response.code === 200) {
+            ElMessageBox.alert('问卷提交成功！感谢您的参与。', '完成', {
+              confirmButtonText: '关闭',
+              type: 'success',
+              callback: () => {
+                // 这里可以跳转
+                // router.push('/home')
+              }
+            })
+        } else {
+            ElMessage.error(response.msg || '提交失败')
+        }
+
       } catch (e) {
-        ElMessage.error('提交失败，请稍后重试')
+        console.error(e)
+        ElMessage.error('网络连接失败，请稍后重试')
       } finally {
         submitting.value = false
       }
 
     } else {
       ElMessage.warning('请完成所有必填项')
-      // 自动滚动到错误位置
       const isError = document.querySelector('.is-error')
       isError?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }

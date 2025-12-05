@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -7,13 +6,10 @@ from sqlalchemy.exc import IntegrityError
 import json
 
 from app.db.session import get_db
-from app.db.redis_tool import get_redis
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
-import redis.asyncio as redis
 
 from app.core.security import verify_password, get_password_hash, create_access_token
-from datetime import timedelta
 router = APIRouter()
 
 

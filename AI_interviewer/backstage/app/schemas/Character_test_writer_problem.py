@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime 
 
 # 定义单个选项的结构
 class SurveyOption(BaseModel):
@@ -18,3 +19,15 @@ class SurveyResponse(BaseModel):
     code: int
     msg: str
     data: List[SurveyQuestion]
+
+
+# 上面的是传送后题目给前端，下面是接受前段传回的答案
+
+class QuestionAnswerPair(BaseModel):
+    question_text: str
+    answer_text: str
+
+class SurveySubmissionSchema(BaseModel):
+#    user_id: str
+    submission_time: datetime
+    answers: List[QuestionAnswerPair]
