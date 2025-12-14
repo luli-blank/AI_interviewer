@@ -1,10 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from app.api.interviewee_api import Login_api   
 from app.db.session import engine, Base
-from app.models.user import User 
-from app.api.interviewee_api import Character_test_writer_api 
+from app.api.interviewee_api import Character_test_writer_api,Character_test_report_api,Character_test_video_api
 app = FastAPI()
 
 # # ==========================================
@@ -29,13 +27,14 @@ app.add_middleware(
     CORSMiddleware,
     # allow_origins=[origins],      # 允许的源
     allow_origins=["*"],      # 允许的源
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],        # 允许所有方法 (GET, POST, etc.)
     allow_headers=["*"],        # 允许所有 Header                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
 )
 
-app.include_router(Login_api.router, prefix="/api/interviewee",tags=["interviewee"])
 app.include_router(Login_api.router, prefix="/api/interviewee", tags=["interviewee"])
 app.include_router(Character_test_writer_api.router, prefix="/api/interviewee", tags=["Interviewee Survey"])
+app.include_router(Character_test_report_api.router, prefix="/api/interviewee", tags=["Interviewee Survey"])
+app.include_router(Character_test_video_api.router, tags=["video_stream"])
 # 启动命令（在终端运行）：终端路径需要抵达backstage
 # uvicorn app.api.main_api:app --reload --port 8000

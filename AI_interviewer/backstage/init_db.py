@@ -1,43 +1,31 @@
-import sys
-import os
-import asyncio
+# 放在 backstage 根目录下运行： python init_db.py
+from sqlalchemy import create_engine
+from app.db.session import Base
+# 确保所有需要创建表的模型都在这里被导入
+from app.models.Character_answer import Character_answer 
+from app.core.config import settings
 
-# 1. 路径设置
-sys.path.append(os.getcwd())
-
-# 2. 引入基础组件
-from app.db.session import engine, Base
-
-# ==========================================
-# 关键步骤：必须在这里导入模型
-# ==========================================
-try:
-    from app.models.Character_answer import Character_answer
-    print(f"✅ 成功导入模型类: {Character_answer}")
-except ImportError as e:
-    print(f"❌ 导入失败，请检查路径或文件名: {e}")
-    exit(1)
-
-async def init_db():
-    print("正在连接数据库 (Async模式)...")
+def init_db():
+    print("正在准备创建数据表...")
     
-    # --- 调试代码：打印当前 Base 知道的所有表名 ---
-    # 这里应该会打印 ['character_answers']
-    print(f"当前注册的表: {list(Base.metadata.tables.keys())}")
+    # 1. 获取配置中的 URL
+    db_url = settings.DATABASE_URL
     
-    # 【修正点】：这里必须检查实际存在的表名 'character_answers'
-    if "character_answers" not in Base.metadata.tables:
-        print("❌ 错误: 'character_answers' 未在 metadata 中找到！")
-        print("   原因可能是：模型类定义中缺少 __tablename__ 或者没有继承 Base")
-        return
-
-    async with engine.begin() as conn:
-        # 执行建表
-        print("正在执行 create_all...")
-        await conn.run_sync(Base.metadata.create_all)
+    # 2. 强制转换为同步驱动 (如果你原配置是 aiomysql)
+    if "aiomysql" in db_url:
+        print("检测到异步驱动 aiomysql，正在临时切换为 pymysql 以执行同步建表...")
+        db_url = db_url.replace("aiomysql", "pymysql")
+        
+    # 3. 创建引擎
+    engine = create_engine(db_url, echo=True)
     
-    print("✅ 脚本执行完毕！请检查数据库是否出现新表。")
-    await engine.dispose()
+    # 4. 建表
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ 数据表 Character_answer (及其他已导入模型) 创建成功！")
+    except Exception as e:
+        print(f"❌ 创建失败: {e}")
+        print("提示：请检查 MySQL 是否启动，以及数据库名称是否存在。")
 
 if __name__ == "__main__":
-    asyncio.run(init_db())
+    init_db()

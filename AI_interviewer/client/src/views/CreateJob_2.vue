@@ -78,7 +78,10 @@ const handleUpload: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
   saveState() // 保存状态
   
   if (uploadFile.status === 'ready') {
-    ElMessage.success(`已选择文件: ${uploadFile.name}`)
+    ElMessage.success({
+      message: `已选择文件: ${uploadFile.name}`,
+      duration: 2000, // 2000毫秒 = 2秒
+    })
   }
 }
 
@@ -96,7 +99,10 @@ const goBack = () => {
 const nextStep = () => {
   // 简单校验：文本和文件至少有一个
   if (!resumeText.value && fileList.value.length === 0) {
-     ElMessage.warning('请上传简历文件或粘贴简历文本')
+     ElMessage.warning({
+      message: '请上传简历文件或粘贴简历文本',
+      duration: 2000, // 2000毫秒 = 2秒
+    })
      return
   }
   
@@ -106,7 +112,10 @@ const nextStep = () => {
     file: fileList.value.length > 0 ? toRaw(fileList.value[0]) : null
   })
 
-  ElMessage.success('进入下一步')
+  ElMessage.success({ 
+    message: '简历信息已保存，进入下一步...', 
+    duration: 1500 
+  })
   router.push({ name: 'CreateJob_3' })
 }
 </script>

@@ -8,3 +8,4 @@ class Character_answer(Base):
     userId = Column(String(50), unique=False, index=True)
     question_and_answer = Column(JSON)
     submissionTime = Column(DateTime, server_default=func.now())
+    analysis_report = Column(JSON, nullable=True)  # 可选字段，存储分析报告的 JSON 数据

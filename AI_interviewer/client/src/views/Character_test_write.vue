@@ -89,7 +89,8 @@ import { reactive, ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getQuestions, submitSurvey } from '../api/Character_test_writer' 
-
+import { useRouter } from 'vue-router'
+const router = useRouter()
 // 如果你安装了 axios，建议使用 import axios from 'axios'
 
 // --- 1. 定义接口 ---
@@ -220,7 +221,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
               type: 'success',
               callback: () => {
                 // 这里可以跳转
-                // router.push('/home')
+                router.push({ name: 'Home' })
               }
             })
         } else {

@@ -15,6 +15,7 @@ const Interview = () => import('../views/Interview.vue')
 const CharacterTest = () => import('../views/Character_test.vue')
 const CharacterTestWirte = () => import('../views/Character_test_write.vue')
 const InterviewCharacter = () => import('../views/Character_test_video.vue')
+const CharacterTestReport = () => import('../views/Character_test_report.vue')
 
 const routes: Array<RouteRecordRaw> = [
   { 
@@ -30,7 +31,7 @@ const routes: Array<RouteRecordRaw> = [
     path: '/MainLayout', 
     name: 'MainLayout', 
     component: MainLayout, // 这里加载带有侧边栏的布局
-    redirect: '{name: "Home"}', // 默认子路由
+    redirect: {name: "Home"}, // 默认子路由
     children:[
       {
         path:'Home',
@@ -78,9 +79,14 @@ const routes: Array<RouteRecordRaw> = [
         component: CharacterTest// 懒加载引入
       },
       {
-        path:'/CHaracter_test_write',
+        path:'/Character_test_write',
         name:'Character_test_write',
         component:CharacterTestWirte
+      },
+      {
+        path:'/Character_test_report',
+        name:'Character_test_report',
+        component:CharacterTestReport
       },
       {
         path:'/Interview_character',

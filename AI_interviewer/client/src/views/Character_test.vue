@@ -8,15 +8,18 @@ import {
   DataLine
 } from '@element-plus/icons-vue'
 import { ro } from 'element-plus/es/locales.mjs'
+import type { ElRow } from 'element-plus'
 
 const router = useRouter()
 
 const handleStartForm = () => {
-  router.push('/CHaracter_test_write')
+  router.push({ name: 'Character_test_write' })
 }
-
+const handleViewReport = () => {
+  router.push({ name: 'Character_test_report' })
+}
 const handleStartChat = () => {
-  router.push('/Interview_character')
+  router.push({name: 'Interview_character' })
 }
 </script>
 
@@ -58,14 +61,25 @@ const handleStartChat = () => {
               <el-tag type="success" effect="plain" round size="small"><el-icon><DataLine /></el-icon> 精准分析</el-tag>
             </div>
 
-            <el-button 
-              type="primary" 
-              class="action-btn" 
-              round 
-              @click="handleStartForm"
-            >
-              开始填表 <el-icon class="el-icon--right"><Right /></el-icon>
-            </el-button>
+             <el-row justify="center" gutter="20">
+              <el-button 
+                type="primary" 
+                class="action-btn" 
+                round 
+                @click="handleStartForm"
+              >
+                开始填表 <el-icon class="el-icon--right"><Right/></el-icon>
+              </el-button>
+                <!-- 查看报告按钮 -->
+              <el-button 
+                type="info" 
+                class="action-btn" 
+                round 
+                @click="handleViewReport"
+              >
+                查看报告 <el-icon class="el-icon--right"><Right /></el-icon>
+              </el-button>
+            </el-row>
           </div>
         </div>
 

@@ -13,7 +13,7 @@ import {
   OfficeBuilding,
   Edit
 } from '@element-plus/icons-vue'
-import localAvatar from "../img/log.png"
+import localAvatar from "@/img/log.png"
 
 const router = useRouter()
 
