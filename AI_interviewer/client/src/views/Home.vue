@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref } from 'vue'
+<script setup lang="ts" >
+import { ref , onMounted} from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   CircleCheck, 
@@ -8,24 +8,50 @@ import {
   ArrowDown, 
 } from '@element-plus/icons-vue'
 import homeBackImg from '../img/homeBackground.jpg'
+import { fetchPosition } from "../utils/getPositon.ts"
+import type { Position } from "../api/Interview_position"
+
 
 const router = useRouter()
 
 // 当前选中的岗位
-const currentRole = ref('后端工程师')
+
+const currentRole = ref<Position | null>(null)
+
+// 岗位选项
+const roleOptions = ref<Position[]>([])
 
 // 模拟开始面试的跳转
 const startInterview = () => {
-  router.push({ name: 'Going' }) 
+  if (currentRole.value) {
+    router.push({ 
+      name: 'Interview_practice',
+      query: { positionId: currentRole.value.id }
+    })
+  } else {
+    router.push({ name: 'Interview_practice' })
+  }
 }
 
-// 模拟岗位选项
-const roleOptions = [
-  '后端工程师',
-  '前端工程师',
-  '产品经理',
-  '算法工程师'
-]
+// 获取岗位列表
+const fetchRoles = async() => {
+  try {
+    const res= await fetchPosition()
+    console.log(res)
+    roleOptions.value = res
+    if (roleOptions.value.length > 0) {
+      currentRole.value = roleOptions.value[0]
+    }
+  }  catch (err) {
+    console.error(err)
+  }
+}
+
+// 初始化获取岗位列表
+onMounted(() => {
+  fetchRoles();
+});
+
 </script>
 
 <template>
@@ -62,15 +88,15 @@ const roleOptions = [
 
         <div class="role-selector">
           <span class="label">当前岗位：</span>
-          <el-dropdown trigger="click" @command="(c: string) => currentRole = c">
+          <el-dropdown trigger="click" @command="(c: Position) => currentRole = c">
             <span class="dropdown-link">
-              {{ currentRole }}-
+              {{ currentRole?.position_name || '请选择岗位' }}
               <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item v-for="role in roleOptions" :key="role" :command="role">
-                  {{ role }}
+                <el-dropdown-item v-for="role in roleOptions" :key="role.id" :command="role">
+                  {{ role.position_name }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>

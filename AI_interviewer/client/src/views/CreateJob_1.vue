@@ -103,9 +103,9 @@ const nextStep = () => {
     </div>
 
     <!-- 装饰图标 -->
-    <div class="decor-icon left-loading">
+    <!-- <div class="decor-icon left-loading">
       <el-icon class="is-loading"><Loading /></el-icon>
-    </div>
+    </div> -->
 
     <!-- 3. 表单区域 -->
     <div class="form-section">

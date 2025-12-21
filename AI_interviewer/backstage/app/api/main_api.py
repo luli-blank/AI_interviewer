@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from .interviewee_api import Interview_video_api
 from app.api.interviewee_api import Login_api   
 from app.db.session import engine, Base
 from app.core.get_user import get_current_user_id
 from fastapi import Depends
-from app.api.interviewee_api import Character_test_writer_api,Character_test_report_api,Character_test_video_api
+from app.api.interviewee_api import Character_test_writer_api,Character_test_report_api, Interview_position_api, Interview_record_api
 app = FastAPI()
 
 # # ==========================================
@@ -37,6 +38,8 @@ app.add_middleware(
 app.include_router(Login_api.router, prefix="/api/interviewee", tags=["interviewee"])
 app.include_router(Character_test_writer_api.router, prefix="/api/interviewee", tags=["Interviewee Survey"],dependencies=[Depends(get_current_user_id)])
 app.include_router(Character_test_report_api.router, prefix="/api/interviewee", tags=["Interviewee Survey"],dependencies=[Depends(get_current_user_id)])
-app.include_router(Character_test_video_api.router, tags=["video_stream"])
+app.include_router(Interview_video_api.router, tags=["video_stream"])
+app.include_router(Interview_position_api.router, prefix="/api/interviewee", tags=["Interview Position"], dependencies=[Depends(get_current_user_id)])
+app.include_router(Interview_record_api.router, prefix="/api/interviewee", tags=["Interview Record"], dependencies=[Depends(get_current_user_id)])
 # 启动命令（在终端运行）：终端路径需要抵达backstage
 # uvicorn app.api.main_api:app --reload --port 8000

@@ -1,60 +1,110 @@
-<script setup>
-import { ref, computed } from "vue";
-import { useRouter } from 'vue-router'
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { useRouter, useRoute } from 'vue-router'
 import { User, Suitcase, ArrowRight } from '@element-plus/icons-vue' // 假设已安装图标库，如未安装可移除icon属性
 import avatar1 from '../img/log.png'
+import { fetchPosition } from "../utils/getPositon.ts"
+import type { Position } from "../api/Interview_position"
 
 const router = useRouter()
+const route = useRoute()
 
-// 模拟数据
-const jobs = ref([
-  {
-    id: 1,
-    title: "前端开发工程师",
-    desc: "负责前端页面开发，熟悉 Vue、TypeScript。",
-    interviewers: [
-      { name: "雷雷", title: "高级算法工程师", avatar: avatar1 },
-      { name: "韩梅梅", title: "前端技术专家", avatar: avatar1}
-    ]
-  },
-  {
-    id: 2,
-    title: "后端开发工程师",
-    desc: "负责后端接口开发，熟悉 FastAPI、Node.js。",
-    interviewers: [
-      { name: "张伟", title: "资深后端工程师", avatar: avatar1 }
-    ]
+
+// 岗位选项
+const positionOption = ref<Position[]>([])
+
+// 获取岗位列表
+const fetchpositionOption = async() => {
+  try {
+    const res= await fetchPosition()
+    console.log(res)
+    positionOption.value = res
+  }  catch (err) {
+    console.error(err)
   }
-]);
+}
 
 // 默认选中 'all'
 const selectedJobId = ref("all");
 
+const handleSelect = (index: string) => {
+  selectedJobId.value = index
+}
+
 const currentJob = computed(() => {
   if (selectedJobId.value === "all") {
+    const allInterviewers = positionOption.value.flatMap(p => 
+      (p.interviewers || []).map(i => ({ ...i, position_name: p.position_name, position_id: p.id }))
+    )
+    
+    // 合并重复面试官并拼接岗位名称
+    const uniqueMap = new Map()
+    allInterviewers.forEach(item => {
+      if (uniqueMap.has(item.id)) {
+        const existing = uniqueMap.get(item.id)
+        if (item.position_name && !existing.position_name.includes(item.position_name)) {
+          existing.position_name += ` / ${item.position_name}`
+          // 注意：合并时 position_id 可能只能保留一个，或者需要改为数组。
+          // 但为了简化，这里如果是合并显示的面试官，可能无法精确对应某一个 position_id 用于保存记录。
+          // 这是一个潜在问题。如果用户点击合并后的面试官，应该算哪个岗位？
+          // 简单的做法：如果不合并，或者合并后让用户选？
+          // 或者：这里只是展示。点击时，如果是合并的，可能需要特殊处理。
+          // 但根据之前的需求“合并重复的面试官”，现在又要保存记录。
+          // 如果面试官属于多个岗位，点击进去面试，应该算哪个岗位？
+          // 也许应该取第一个？或者在面试界面不区分？
+          // 让我们先保留第一个 position_id。
+        }
+      } else {
+        uniqueMap.set(item.id, { ...item })
+      }
+    })
+
     return {
-      title: "全部岗位",
-      desc: "请选择下方的面试官开始模拟面试",
-      interviewers: jobs.value.flatMap(j => j.interviewers)
+      position_name: "全部岗位",
+      description: "请选择下方的面试官开始模拟面试",
+      interviewers: Array.from(uniqueMap.values())
     }
   }
   // 确保类型匹配（el-menu index 默认为 string）
-  return jobs.value.find(j => String(j.id) === selectedJobId.value)
+  const job = positionOption.value.find(p => String(p.id) === selectedJobId.value)
+  if (job) {
+    return {
+      ...job,
+      interviewers: (job.interviewers || []).map(i => ({ ...i, position_name: job.position_name, position_id: job.id }))
+    }
+  }
+  return job
 })
 
-const handleMenuSelect = (index) => {
-  selectedJobId.value = index;
+onMounted(async ()=>{
+  await fetchpositionOption()
+  if (route.query.positionId) {
+    selectedJobId.value = String(route.query.positionId)
+  }
+})
+
+// const goToInterview = (interviewer) => {
+//   router.push({
+//     name: 'Interview',
+//     query: { 
+//       name: interviewer.name, 
+//       title: interviewer.title 
+//     }
+//   })
+//}
+const goToInterview = (interviewer: any) => {
+  router.push({ 
+    name: 'Interview',
+    query: {
+      name: interviewer.name,
+      title: interviewer.title,
+      avatar: interviewer.avatar,
+      interviewer_id: interviewer.id,
+      position_id: interviewer.position_id
+    }
+  }) 
 }
 
-const goToInterview = (interviewer) => {
-  router.push({
-    name: 'Interview',
-    query: { 
-      name: interviewer.name, 
-      title: interviewer.title 
-    }
-  })
-}
 </script>
 
 <template>
@@ -69,7 +119,7 @@ const goToInterview = (interviewer) => {
       <el-menu
         :default-active="selectedJobId"
         class="custom-menu"
-        @select="handleMenuSelect"
+        @select="handleSelect"
       >
         <el-menu-item index="all">
           <el-icon><Suitcase /></el-icon>
@@ -77,12 +127,12 @@ const goToInterview = (interviewer) => {
         </el-menu-item>
         
         <el-menu-item 
-          v-for="job in jobs" 
-          :key="job.id" 
-          :index="String(job.id)"
+          v-for="position in positionOption" 
+          :key=" position.id" 
+          :index="String(position.id)"
         >
           <el-icon><User /></el-icon>
-          <span>{{ job.title }}</span>
+          <span>{{ position.position_name }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -100,8 +150,8 @@ const goToInterview = (interviewer) => {
         <template #header>
           <div class="card-header">
             <div>
-              <span class="job-title-large">{{ currentJob?.title }}</span>
-              <p class="job-desc-text">{{ currentJob?.desc }}</p>
+              <span class="job-title-large">{{ currentJob?.position_name }}</span>
+              <p class="job-desc-text">{{ currentJob?.description }}</p>
             </div>
             <el-tag v-if="selectedJobId !== 'all'" type="success" effect="light" round>
               当前选择
@@ -121,7 +171,8 @@ const goToInterview = (interviewer) => {
               <div class="interviewer-card-wrapper" @click="goToInterview(p)">
                 <el-card shadow="hover" class="interviewer-card-item">
                   <div class="card-content">
-                    <el-avatar :size="64" :src="p.avatar" class="custom-avatar" />
+                    <div class="p-position" v-if="selectedJobId === 'all' && p.position_name">{{ p.position_name }}</div>
+                    <el-avatar :size="64" :src="p.avatar || avatar1" class="custom-avatar" />
                     <div class="text-info">
                       <div class="p-name">{{ p.name }}</div>
                       <div class="p-title">{{ p.title }}</div>
@@ -197,7 +248,9 @@ const goToInterview = (interviewer) => {
 }
 
 /* 选中态：仿照图片的青绿色 */
-:deep(.el-menu-item.is-active) {
+:deep(.el-menu-item.is-active),
+:deep(.el-menu-item.is-active:hover),
+:deep(.el-menu-item.is-active:focus) {
   background-color: #eaf7f4; 
   color: #4b9e88; /* 图片中的青绿色文字 */
   font-weight: 600;
@@ -292,6 +345,7 @@ const goToInterview = (interviewer) => {
   border-radius: 12px;
   border: 1px solid #ebeef5;
   background: #fdfdfd;
+  height: 240px;
 }
 
 .card-content {
@@ -301,12 +355,15 @@ const goToInterview = (interviewer) => {
   text-align: center;
   padding: 10px 0;
   position: relative;
+  height: 100%;
+  justify-content: center;
 }
 
 .custom-avatar {
   border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .text-info .p-name {
@@ -322,6 +379,18 @@ const goToInterview = (interviewer) => {
   background-color: #f4f4f5;
   padding: 2px 8px;
   border-radius: 10px;
+}
+
+.p-position {
+  font-size: 13px;
+  color: #4b9e88;
+  margin-bottom: 12px;
+  font-weight: 500;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 10px;
 }
 
 .action-icon {

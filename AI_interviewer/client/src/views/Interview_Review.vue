@@ -1,41 +1,58 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   ArrowLeft, 
   ArrowRight,
   DCaret
 } from '@element-plus/icons-vue'
+import { getRecords, type InterviewRecord } from '../api/Interview_record'
 
 // 假设这是你的 Logo 图片路径，如果没有可以先用文字代替
 // import logoImg from '@/assets/logo.png' 
 
 const router = useRouter()
 
-// 模拟数据
-const historyList = ref([
-  {
-    id: 1,
-    date: '2025-10-23',
-    time: '18:27',
-    title: '后端工程师 - 模拟面试',
-    status: 'completed'
-  },
-  {
-    id: 2,
-    date: '2025-10-20',
-    time: '14:30',
-    title: '产品经理 - 压力面试',
-    status: 'completed'
-  },
-  {
-    id: 3,
-    date: '2025-10-15',
-    time: '09:00',
-    title: '前端开发 - 基础技术面',
-    status: 'completed'
+interface HistoryItem {
+  id: number
+  date: string
+  time: string
+  title: string
+  status: string
+}
+
+const historyList = ref<HistoryItem[]>([])
+
+const fetchHistory = async () => {
+  try {
+    const records = await getRecords()
+    historyList.value = records.map(record => {
+      const dateObj = new Date(record.time)
+      const year = dateObj.getFullYear()
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
+      const day = dateObj.getDate().toString().padStart(2, '0')
+      const date = `${year}-${month}-${day}`
+      
+      const hours = dateObj.getHours().toString().padStart(2, '0')
+      const minutes = dateObj.getMinutes().toString().padStart(2, '0')
+      const time = `${hours}:${minutes}`
+      
+      return {
+        id: record.id,
+        date: date,
+        time: time,
+        title: `${record.position_name || '未知岗位'} - ${record.interviewer_name || '面试官'}`,
+        status: 'completed'
+      }
+    })
+  } catch (error) {
+    console.error('获取面试记录失败:', error)
   }
-])
+}
+
+onMounted(() => {
+  fetchHistory()
+})
 
 const goBack = () => {
   router.push({ name: 'Home' }) // 或者 router.back()
@@ -43,7 +60,7 @@ const goBack = () => {
 
 const viewDetail = (id: number) => {
   console.log('查看详情', id)
-  // router.push({ name: 'InterviewDetail', params: { id } })
+  router.push({ name: 'Interview_report', params: { id } })
 }
 </script>
 
@@ -78,7 +95,8 @@ const viewDetail = (id: number) => {
           :key="item.id" 
           class="timeline-row animate-in"
           :style="{ animationDelay: `${index * 0.1}s` }"
-        >
+        
+          >
           
           <!-- 左侧：时间 -->
           <div class="time-col">

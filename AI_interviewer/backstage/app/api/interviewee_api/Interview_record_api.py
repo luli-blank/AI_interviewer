@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from typing import List
-from datetime import datetime
 
 from app.db.session import get_db
 from app.core.get_user import get_current_user_id, get_current_user_int_id
@@ -22,8 +21,7 @@ async def create_record(
     new_record = Interview_record(
         user_id=current_user_id,
         position_id=record_in.position_id,
-        interviewer_id=record_in.interviewer_id,
-        time=datetime.now()
+        interviewer_id=record_in.interviewer_id
     )
     db.add(new_record)
     await db.commit()

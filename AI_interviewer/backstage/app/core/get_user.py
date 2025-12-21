@@ -52,3 +52,24 @@ def get_current_user_id(
     except (JWTError, ValidationError):
         # 如果 Token 过期、伪造或格式错误，抛出 401
         raise credentials_exception
+
+def get_current_user_int_id(
+    token: str = Depends(reusable_oauth2)
+) -> int:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=[settings.ALGORITHM]
+        )
+        user_id = payload.get("id")
+        if user_id is None:
+            raise credentials_exception
+        return int(user_id)
+    except (JWTError, ValidationError, ValueError):
+        raise credentials_exception
