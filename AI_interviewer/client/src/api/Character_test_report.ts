@@ -7,6 +7,21 @@ export interface ReportSchema {
     strengths: string[]
     weaknesses: string[]
     summary:string
+
+    competency_radar: CompetencyRadarItem[]
+    motivation_values: MotivationValues
+}
+
+export interface CompetencyRadarItem {
+  name: string
+  score: number
+}
+
+export interface MotivationValues {
+  maslow_focus: string[]
+  motivation_summary: string
+  ideal_environment: string[]
+  risk_warnings: string[]
 }
 
 export function getReport() {
