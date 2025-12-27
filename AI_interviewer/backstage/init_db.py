@@ -2,7 +2,7 @@
 from sqlalchemy import create_engine
 from app.db.session import Base
 # 确保所有需要创建表的模型都在这里被导入
-from app.models.Character_answer import Character_answer 
+from app.models.Resume_message import Resume_messages
 from app.core.config import settings
 
 def init_db():

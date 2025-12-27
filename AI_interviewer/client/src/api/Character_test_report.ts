@@ -28,5 +28,6 @@ export function getReport() {
   return request<any, ReportSchema>({
     url: '/api/interviewee/generate_report',
     method: 'get',
+    timeout: 120000, // 单独设置超时时间为 120 秒，防止生成报告时间过长导致前端超时
   })
 }

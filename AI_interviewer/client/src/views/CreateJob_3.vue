@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue' 
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus' 
 import { 
   RefreshLeft, 
   VideoPlay, 
@@ -8,90 +9,157 @@ import {
   CircleCheckFilled,
   Trophy
 } from '@element-plus/icons-vue'
+import { getResumeFile, clearResumeFile } from '../utils/localStorage'
+import { createInterviewSession } from '../api/Resume_upload'
 
 const router = useRouter()
 
-// === 定义需要清除的 LocalStorage Key ===
-// 必须与前两步代码中定义的 KEY 保持一致
+// === 定义 LocalStorage Key ===
 const STEP1_KEY = 'interview_data_step1'
 const STEP2_KEY = 'interview_data_step2'
 
-// === 路由跳转逻辑 ===
+// === 定义状态 ===
+const isSubmitting = ref(false) 
+const btnText = ref('数据同步') 
+
+// === 修改点 1：移除返回按钮的锁定拦截 ===
 const goBack = () => {
-  router.go(-1) // 返回上一页 (SelectResume)
+  // 原来的拦截逻辑已删除：if (isSubmitting.value) return 
+  router.go(-1) 
 }
 
-const startInterview = () => {
-  // 1. 清除本地缓存 (核心修改)
+const startInterview = async () => {
+  // === 1. 冷却拦截逻辑 (15秒锁) - 依然对当前按钮生效 ===
+  if (isSubmitting.value) return
+  
+  isSubmitting.value = true
+  
+  // 这里你设置的是3秒倒计时演示，如果是15秒请改为15
+  let countdown = 3
+  btnText.value = `请等待 ${countdown} 秒`
+  
+  const timer = setInterval(() => {
+    countdown--
+    if (countdown <= 0) {
+      clearInterval(timer)
+      isSubmitting.value = false
+      btnText.value = '提交数据'
+    } else {
+      btnText.value = `请等待 ${countdown} 秒`
+    }
+  }, 1000)
+
+  // === 2. 业务逻辑 ===
   try {
+    const step1Data = localStorage.getItem(STEP1_KEY)
+    const step2Data = localStorage.getItem(STEP2_KEY)
+    
+    if (!step1Data || !step2Data) {
+      ElMessage.warning('数据不完整，请重新填写')
+      return
+    }
+    
+    const step1 = JSON.parse(step1Data)
+    const step2 = JSON.parse(step2Data)
+    
+    const resumeFile = await getResumeFile()
+    
+    // 组装 FormData
+    const formData = new FormData()
+    formData.append('job_name', step1.jobName)
+    formData.append('job_desc', step1.jobDesc || '')
+    formData.append('company_name', step1.companyName || '')
+    formData.append('company_desc', step1.companyDesc || '')
+    formData.append('resume_text', step2.resumeText || '')
+    
+    if (resumeFile) {
+      formData.append('resume_file', resumeFile)
+    }
+    
+    // === 3. 调用后端 API ===
+    console.log('正在向后端发送数据...')
+    const response = await createInterviewSession(formData)
+    
+    // 获取后端生成的 SessionID
+    const sessionId = response.data?.sessionId || response.sessionId
+    console.log('后端返回的 SessionID:', sessionId)
+
+    // 清空本地缓存
     localStorage.removeItem(STEP1_KEY)
     localStorage.removeItem(STEP2_KEY)
-    console.log('流程结束，本地缓存已清空')
-  } catch (error) {
-    console.error('清空缓存失败:', error)
+    await clearResumeFile()
+    
+    // === 4. 成功提示 ===
+    ElMessage.success({
+      message: '数据已成功同步至服务器！',
+      duration: 3000, 
+    })
+    
+  } catch (error: any) {
+    console.error('上传失败:', error)
+    let msg = '请求失败'
+    if (error.response?.data?.message) {
+      msg = error.response.data.message
+    } else if (error.message) {
+      msg = error.message
+    }
+    ElMessage.error(msg)
   }
-
-  // 2. 提示与跳转
-  ElMessage.success('配置完成，正在进入面试房间...')
-  
-  // 模拟跳转到正式面试页面
-  setTimeout(() => {
-    // 假设你的面试页面路由叫 'Going'
-    router.push({ name: 'Going' }) 
-  }, 1000)
 }
 </script>
 
 <template>
   <div class="page-container">
     
-    <!-- 1. 顶部步骤条 (状态改变：全亮) -->
+    <!-- 步骤条 -->
     <div class="steps-wrapper">
       <div class="step-pill">
         <span class="step-item finished">填写岗位信息</span>
         <el-icon class="step-arrow"><ArrowRight /></el-icon>
         <span class="step-item finished">选择简历</span>
         <el-icon class="step-arrow"><ArrowRight /></el-icon>
-        <span class="step-item active">岗位推荐</span>
+        <span class="step-item active">数据同步</span>
       </div>
     </div>
 
-    <!-- 2. 核心内容区域 (垂直居中布局) -->
+    <!-- 内容区 -->
     <div class="content-wrapper">
-      
-      <!-- 成功插画/图标区域 -->
       <div class="success-illustration">
         <div class="icon-bg-layer"></div>
         <el-icon class="success-icon"><CircleCheckFilled /></el-icon>
-        
-        <!-- 装饰性的小图标 (模拟撒花效果) -->
         <div class="deco-dot dot-1"></div>
         <div class="deco-dot dot-2"></div>
         <div class="deco-dot dot-3"></div>
         <el-icon class="deco-icon trophy"><Trophy /></el-icon>
       </div>
 
-      <!-- 文本提示 -->
       <h1 class="main-title">准备工作已完成！</h1>
       <p class="sub-title">
-        AI 面试官已根据您的岗位和简历生成了专属题库。<br>
-        请调整好心态，保持环境安静，随时开始模拟面试。
+        点击下方按钮将您的简历和岗位信息同步至服务器。<br>
+        (本次操作仅用于数据传输测试，不会开启面试)
       </p>
-
     </div>
 
-    <!-- 3. 底部按钮 -->
+    <!-- 按钮区 -->
     <div class="footer-actions">
-      <!-- 上一步 -->
+      <!-- 
+        修改点 2：移除了 :disabled="isSubmitting" 
+        现在无论右侧按钮是否在倒计时，上一步按钮永远可点
+      -->
       <button class="action-btn back-btn" @click="goBack">
         <el-icon style="margin-right: 4px"><RefreshLeft /></el-icon>
         上一步
       </button>
       
-      <!-- 提交/开始按钮 -->
-      <button class="action-btn start-btn" @click="startInterview">
-        <el-icon style="margin-right: 6px"><VideoPlay /></el-icon>
-        开始模拟面试
+      <!-- 数据同步按钮保持原样，受 isSubmitting 控制 -->
+      <button 
+        class="action-btn start-btn" 
+        :class="{ 'is-disabled': isSubmitting }"
+        @click="startInterview"
+        :disabled="isSubmitting"
+      >
+        <el-icon style="margin-right: 6px" v-if="!isSubmitting"><VideoPlay /></el-icon>
+        {{ btnText }}
       </button>
     </div>
 
@@ -99,7 +167,7 @@ const startInterview = () => {
 </template>
 
 <style scoped>
-/* 页面容器 - 保持背景一致 */
+/* 样式保持不变 */
 .page-container {
   width: 100%;
   height: 100%;
@@ -111,7 +179,6 @@ const startInterview = () => {
   align-items: center;
 }
 
-/* === 步骤条 === */
 .steps-wrapper { margin-bottom: 60px; }
 .step-pill {
   background-color: white;
@@ -124,10 +191,9 @@ const startInterview = () => {
 }
 .step-item { color: #999; font-size: 14px; font-weight: 500; }
 .step-item.active { color: #3a856b; font-weight: bold; } 
-.step-item.finished { color: #3a856b; } /* 完成也是绿色 */
+.step-item.finished { color: #3a856b; } 
 .step-arrow { color: #ccc; font-size: 12px; }
 
-/* === 核心内容区 === */
 .content-wrapper {
   text-align: center;
   display: flex;
@@ -142,7 +208,6 @@ const startInterview = () => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* === 成功插画样式 (CSS绘制) === */
 .success-illustration {
   position: relative;
   width: 120px;
@@ -153,7 +218,6 @@ const startInterview = () => {
   justify-content: center;
 }
 
-/* 绿色光晕背景 */
 .icon-bg-layer {
   position: absolute;
   width: 100%;
@@ -170,7 +234,6 @@ const startInterview = () => {
   100% { transform: scale(0.95); opacity: 0.5; }
 }
 
-/* 核心对勾图标 */
 .success-icon {
   font-size: 80px;
   color: #3a856b;
@@ -178,11 +241,10 @@ const startInterview = () => {
   filter: drop-shadow(0 10px 15px rgba(58, 133, 107, 0.3));
 }
 
-/* 装饰元素 */
 .deco-dot {
   position: absolute;
   border-radius: 50%;
-  background-color: #fca5a5; /* 珊瑚红点缀 */
+  background-color: #fca5a5; 
 }
 .dot-1 { width: 10px; height: 10px; top: 0; right: 10px; animation: float 3s infinite ease-in-out; }
 .dot-2 { width: 8px; height: 8px; bottom: 10px; left: 0; background-color: #fcd34d; animation: float 4s infinite ease-in-out reverse; }
@@ -191,7 +253,7 @@ const startInterview = () => {
 .deco-icon.trophy {
   position: absolute;
   font-size: 24px;
-  color: #f59e0b; /* 金色奖杯 */
+  color: #f59e0b; 
   bottom: -5px;
   right: -10px;
   z-index: 3;
@@ -204,7 +266,6 @@ const startInterview = () => {
   50% { transform: translateY(-10px) rotate(15deg); }
 }
 
-/* === 文本样式 === */
 .main-title {
   color: #333;
   font-size: 36px;
@@ -219,7 +280,6 @@ const startInterview = () => {
   max-width: 600px;
 }
 
-/* === 底部按钮 === */
 .footer-actions {
   display: flex;
   gap: 20px;
@@ -238,21 +298,28 @@ const startInterview = () => {
   letter-spacing: 0.5px;
 }
 
+.action-btn:disabled,
+.action-btn.is-disabled {
+  background-color: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .back-btn { background-color: #dbece5; color: #2c5e4f; }
 .back-btn:hover { background-color: #cce3db; }
 
-/* 开始面试按钮 */
 .start-btn { 
   background-color: #3a856b; 
   color: white; 
   font-weight: 600; 
   box-shadow: 0 4px 14px rgba(58, 133, 107, 0.4);
 }
-.start-btn:hover { 
+.start-btn:not(:disabled):hover { 
   background-color: #2e6b56; 
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(58, 133, 107, 0.5);
 }
-.start-btn:active { transform: scale(0.98); }
-
+.start-btn:not(:disabled):active { transform: scale(0.98); }
 </style>

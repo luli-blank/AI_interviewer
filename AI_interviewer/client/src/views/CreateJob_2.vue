@@ -9,6 +9,7 @@ import {
 } from '@element-plus/icons-vue'
 import type { UploadProps, UploadUserFile } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import { saveResumeFile, clearResumeFile } from '../utils/localStorage'
 
 const router = useRouter()
 
@@ -53,7 +54,7 @@ onMounted(() => {
 const saveState = () => {
   try {
     // 获取当前选中的第一个文件名（如果是单文件上传）
-    const currentFileName = fileList.value.length > 0 ? fileList.value[0].name : ''
+    const currentFileName = fileList.value.length > 0 ? fileList.value[0]!.name : ''
     
     const data = {
       resumeText: resumeText.value,
@@ -73,10 +74,20 @@ watch(resumeText, () => {
 })
 
 // 5.2 监听文件变化 (添加文件)
-const handleUpload: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
+const handleUpload: UploadProps['onChange'] = async (uploadFile, uploadFiles) => {
   fileList.value = uploadFiles // 更新列表
   saveState() // 保存状态
   
+  if (uploadFile.raw) {
+    try {
+      await saveResumeFile(uploadFile.raw)
+      console.log('简历文件已保存到 IndexedDB')
+    } catch (e) {
+      console.error('保存文件失败', e)
+      ElMessage.error('文件保存失败，请重试')
+    }
+  }
+
   if (uploadFile.status === 'ready') {
     ElMessage.success({
       message: `已选择文件: ${uploadFile.name}`,
@@ -86,9 +97,16 @@ const handleUpload: UploadProps['onChange'] = (uploadFile, uploadFiles) => {
 }
 
 // 5.3 监听文件移除
-const handleRemove: UploadProps['onRemove'] = (uploadFile, uploadFiles) => {
+const handleRemove: UploadProps['onRemove'] = async (uploadFile, uploadFiles) => {
   fileList.value = uploadFiles // 更新列表
   saveState() // 保存状态（此时 fileName 会变为空）
+  
+  try {
+    await clearResumeFile()
+    console.log('简历文件已从 IndexedDB 移除')
+  } catch (e) {
+    console.error('移除文件失败', e)
+  }
 }
 
 // === 路由跳转逻辑 ===
@@ -175,6 +193,7 @@ const nextStep = () => {
             
             <div class="upload-text-main">拖拽简历到此处上传</div>
             <div class="upload-text-sub">或点击选择文件上传</div>
+            <div class="upload-text-sub">（请勿超过1MB）</div>
           </div>
         </el-upload>
       </div>

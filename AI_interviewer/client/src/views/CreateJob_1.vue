@@ -137,7 +137,7 @@ const nextStep = () => {
       <div class="input-group">
         <el-input 
           v-model="formData.companyName" 
-          placeholder="(可选)请输入公司名称" 
+          placeholder="(可选)请输入意向公司名称" 
           class="custom-input large-input"
         />
       </div>
@@ -148,7 +148,7 @@ const nextStep = () => {
           v-model="formData.companyDesc" 
           type="textarea"
           :rows="6"
-          placeholder="(可选)请输入公司简介，当面试官提及公司业务情况时，AI会根据描述，生成恰当的回答。" 
+          placeholder="(可选)请输意向的公司情况、企业文化、工作时间等信息。" 
           class="custom-input custom-textarea"
           maxlength="2000"
           show-word-limit

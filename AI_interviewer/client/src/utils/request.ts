@@ -7,7 +7,7 @@ import axios from 'axios'
 const service = axios.create({
   // 读取 .env 中的地址，如果读不到就用空字符串(防止报错)
     baseURL: import.meta.env.VITE_API_BASE_URL || '', 
-    timeout: 10000 // 请求超时时间 10秒
+    timeout: 60000 // 请求超时时间 60秒 (文件上传可能较慢)
 })
 
 // 2. 请求拦截器：每次请求前自动带上 Token
