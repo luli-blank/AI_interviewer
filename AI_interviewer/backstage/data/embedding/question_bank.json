@@ -1,0 +1,244 @@
+[
+  {
+    "question": "请用1-2分钟简单介绍一下你自己。",
+    "reference_answer": "考察表达能力、逻辑性、是否能突出亮点。好的回答应包含：教育背景、核心技能、相关经验、求职动机。",
+    "category": "自我介绍",
+    "difficulty": 1,
+    "tags": [
+      "开场",
+      "表达能力"
+    ]
+  },
+  {
+    "question": "你为什么对这个岗位感兴趣？",
+    "reference_answer": "考察求职动机和岗位匹配度。期望听到对岗位的理解、与自身技能的匹配、职业规划。",
+    "category": "自我介绍",
+    "difficulty": 1,
+    "tags": [
+      "动机",
+      "职业规划"
+    ]
+  },
+  {
+    "question": "请介绍一个你最有成就感的项目，你在其中负责什么？",
+    "reference_answer": "考察项目经验深度、角色定位。使用STAR法则评估：情境、任务、行动、结果。",
+    "category": "项目经验",
+    "difficulty": 2,
+    "tags": [
+      "项目",
+      "成就"
+    ]
+  },
+  {
+    "question": "在这个项目中，你遇到的最大挑战是什么？你是如何解决的？",
+    "reference_answer": "考察问题解决能力、抗压能力。期望听到具体的挑战、思考过程、解决方案、结果。",
+    "category": "项目经验",
+    "difficulty": 3,
+    "tags": [
+      "挑战",
+      "问题解决"
+    ]
+  },
+  {
+    "question": "这个项目的技术选型是怎么考虑的？有没有更好的方案？",
+    "reference_answer": "考察技术视野和决策能力。期望听到技术对比、权衡考虑、对替代方案的了解。",
+    "category": "项目经验",
+    "difficulty": 3,
+    "tags": [
+      "技术选型",
+      "架构"
+    ]
+  },
+  {
+    "question": "你在团队中是如何与其他成员协作的？",
+    "reference_answer": "考察团队协作能力。期望听到沟通方式、冲突处理、协作工具使用。",
+    "category": "项目经验",
+    "difficulty": 2,
+    "tags": [
+      "团队",
+      "协作"
+    ]
+  },
+  {
+    "question": "请解释一下什么是RESTful API？",
+    "reference_answer": "REST是一种架构风格，核心概念：资源、URI、HTTP方法、无状态、统一接口。",
+    "category": "基础知识-通用",
+    "difficulty": 2,
+    "tags": [
+      "API",
+      "REST",
+      "后端"
+    ]
+  },
+  {
+    "question": "HTTP和HTTPS有什么区别？HTTPS是如何保证安全的？",
+    "reference_answer": "HTTPS = HTTP + TLS/SSL。安全保证：加密传输、身份验证、数据完整性。握手过程。",
+    "category": "基础知识-通用",
+    "difficulty": 2,
+    "tags": [
+      "网络",
+      "安全",
+      "HTTP"
+    ]
+  },
+  {
+    "question": "数据库事务的ACID特性是什么？",
+    "reference_answer": "原子性、一致性、隔离性、持久性。每个特性的含义和实现方式。",
+    "category": "基础知识-通用",
+    "difficulty": 3,
+    "tags": [
+      "数据库",
+      "事务",
+      "ACID"
+    ]
+  },
+  {
+    "question": "Python中的GIL是什么？它有什么影响？",
+    "reference_answer": "全局解释器锁，确保同一时刻只有一个线程执行Python字节码。影响多线程性能，解决方案：多进程、异步IO。",
+    "category": "基础知识-Python",
+    "difficulty": 3,
+    "tags": [
+      "Python",
+      "GIL",
+      "多线程"
+    ]
+  },
+  {
+    "question": "Python中的装饰器是什么？请举例说明。",
+    "reference_answer": "装饰器是修改函数行为的语法糖，本质是高阶函数。常见应用：日志、权限、缓存。",
+    "category": "基础知识-Python",
+    "difficulty": 2,
+    "tags": [
+      "Python",
+      "装饰器"
+    ]
+  },
+  {
+    "question": "解释Python中的生成器和迭代器的区别。",
+    "reference_answer": "迭代器是实现了__iter__和__next__的对象。生成器是特殊的迭代器，使用yield。优点：内存效率。",
+    "category": "基础知识-Python",
+    "difficulty": 2,
+    "tags": [
+      "Python",
+      "生成器",
+      "迭代器"
+    ]
+  },
+  {
+    "question": "请解释JavaScript中的事件循环(Event Loop)机制。",
+    "reference_answer": "单线程执行，异步通过事件循环实现。调用栈、任务队列、微任务队列。宏任务和微任务的执行顺序。",
+    "category": "基础知识-JavaScript",
+    "difficulty": 3,
+    "tags": [
+      "JavaScript",
+      "事件循环",
+      "异步"
+    ]
+  },
+  {
+    "question": "var、let、const有什么区别？",
+    "reference_answer": "作用域：var函数级，let/const块级。提升行为不同。const不可重新赋值。",
+    "category": "基础知识-JavaScript",
+    "difficulty": 1,
+    "tags": [
+      "JavaScript",
+      "变量"
+    ]
+  },
+  {
+    "question": "什么是闭包？请举例说明它的应用场景。",
+    "reference_answer": "函数访问其词法作用域外的变量。应用：数据私有化、柯里化、模块模式。",
+    "category": "基础知识-JavaScript",
+    "difficulty": 2,
+    "tags": [
+      "JavaScript",
+      "闭包"
+    ]
+  },
+  {
+    "question": "请解释Java中的垃圾回收机制。",
+    "reference_answer": "自动内存管理。标记-清除、复制、标记-整理算法。分代收集：年轻代、老年代。常见GC：G1、ZGC。",
+    "category": "基础知识-Java",
+    "difficulty": 3,
+    "tags": [
+      "Java",
+      "GC",
+      "内存"
+    ]
+  },
+  {
+    "question": "HashMap的实现原理是什么？",
+    "reference_answer": "数组+链表+红黑树。哈希函数、扩容机制、线程安全问题。Java 8优化。",
+    "category": "基础知识-Java",
+    "difficulty": 3,
+    "tags": [
+      "Java",
+      "HashMap",
+      "数据结构"
+    ]
+  },
+  {
+    "question": "什么是Spring的IoC和AOP？",
+    "reference_answer": "IoC控制反转，DI依赖注入。AOP面向切面编程，横切关注点。应用：事务、日志、权限。",
+    "category": "基础知识-Java",
+    "difficulty": 2,
+    "tags": [
+      "Java",
+      "Spring",
+      "IoC",
+      "AOP"
+    ]
+  },
+  {
+    "question": "如果让你设计一个短链接服务，你会怎么设计？",
+    "reference_answer": "核心：URL映射、唯一ID生成、重定向。考虑：进制转换、分布式ID、缓存、过期策略。",
+    "category": "场景算法",
+    "difficulty": 4,
+    "tags": [
+      "系统设计",
+      "短链接"
+    ]
+  },
+  {
+    "question": "如何设计一个高并发的秒杀系统？",
+    "reference_answer": "核心问题：超卖、性能、公平性。方案：限流、缓存、消息队列、乐观锁/分布式锁、预扣减。",
+    "category": "场景算法",
+    "difficulty": 5,
+    "tags": [
+      "系统设计",
+      "高并发",
+      "秒杀"
+    ]
+  },
+  {
+    "question": "请描述一下你对微服务架构的理解。",
+    "reference_answer": "服务拆分、独立部署、API网关、服务发现、配置中心、链路追踪。优缺点对比。",
+    "category": "场景算法",
+    "difficulty": 3,
+    "tags": [
+      "架构",
+      "微服务"
+    ]
+  },
+  {
+    "question": "给定一个整数数组，找出两数之和等于目标值的索引。",
+    "reference_answer": "方法：暴力O(n²)、哈希表O(n)。代码实现、边界条件、复杂度分析。",
+    "category": "场景算法",
+    "difficulty": 2,
+    "tags": [
+      "算法",
+      "数组",
+      "哈希表"
+    ]
+  },
+  {
+    "question": "你还有什么想问我的吗？",
+    "reference_answer": "标准结束问题。好的问题：团队情况、技术栈、成长路径、项目规划。避免只问薪资福利。",
+    "category": "反问环节",
+    "difficulty": 1,
+    "tags": [
+      "结束",
+      "反问"
+    ]
+  }
+]

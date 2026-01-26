@@ -8,7 +8,18 @@ from app.db.session import engine, Base
 from app.core.get_user import get_current_user_id
 from fastapi import Depends
 from app.api.interviewee_api import Character_test_writer_api,Character_test_report_api, Interview_position_api, Interview_record_api
-from app.api.interviewee_api import Interview_session_api  # 新增：面试会话API
+from app.api.interviewee_api import Interview_session_api  # 面试会话API (旧版)
+
+# 尝试导入 Agent API（如果依赖未安装则跳过）
+try:
+    from app.api.interviewee_api import Interview_session_agent_api
+    AGENT_API_AVAILABLE = True
+    print("[Main API] ✅ Agent API loaded successfully")
+except ImportError as e:
+    AGENT_API_AVAILABLE = False
+    Interview_session_agent_api = None
+    print(f"[Main API] ⚠️ Agent API not available: {e}")
+    print("[Main API] Agent features will be disabled. To enable, install: pip install -r requirements_agent.txt")
 
 # 导入所有模型以便自动创建表
 from app.models.Interview_question import InterviewQuestion, InterviewQuestionUsage
@@ -61,6 +72,14 @@ app.include_router(Interview_video_api.router, tags=["video_stream"])
 app.include_router(Interview_position_api.router, prefix="/api/interviewee", tags=["Interview Position"], dependencies=[Depends(get_current_user_id)])
 app.include_router(Interview_record_api.router, prefix="/api/interviewee", tags=["Interview Record"], dependencies=[Depends(get_current_user_id)])
 app.include_router(Resume_upload_api.router, prefix="/api/interview", tags=["Interview Create"], dependencies=[Depends(get_current_user_id)])
-app.include_router(Interview_session_api.router, prefix="/api/interview", tags=["Interview Session"])  # 新增：面试会话路由
+app.include_router(Interview_session_api.router, prefix="/api/interview", tags=["Interview Session"])  # 面试会话路由 (旧版)
+
+# 只在 Agent API 可用时注册路由
+if AGENT_API_AVAILABLE and Interview_session_agent_api is not None:
+    app.include_router(Interview_session_agent_api.router, prefix="/api/interview", tags=["Interview Session Agent"])
+    print("[Main API] ✅ Agent routes registered at /api/interview/ws/interview/agent")
+else:
+    print("[Main API] ⚠️ Agent routes not registered (dependencies missing)")
+
 # 启动命令（在终端运行）：终端路径需要抵达backstage
 # uvicorn app.api.main_api:app --reload --port 8000

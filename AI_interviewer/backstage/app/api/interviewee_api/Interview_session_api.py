@@ -641,11 +641,11 @@ async def handle_end(websocket: WebSocket, session: InterviewSession, reason: st
         })
         
         # 7. 等待10秒后发送跳转信号
-        await asyncio.sleep(10)
-        await websocket.send_json({
-            "type": "redirect",
-            "target": "home"
-        })
+        # await asyncio.sleep(10)
+        # await websocket.send_json({
+        #     "type": "redirect",
+        #     "target": "home"
+        # })
     except (RuntimeError, WebSocketDisconnect):
         print(f"[WebSocket] ⚠️ Client disconnected before end messages could be sent")
         # 连接已关闭，跳过后续消息发送

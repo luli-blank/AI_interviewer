@@ -40,6 +40,7 @@ const wsInterview = ref(null);  // 面试会话 WebSocket
 const audioContext = ref(null);
 const audioQueue = ref([]);
 const isPlayingAudio = ref(false);
+const waitingForClosingRemarks = ref(false); // 是否等待结束语播放完毕
 
 // --- 字幕相关 ---
 const isSubtitleOn = ref(true);
@@ -198,9 +199,11 @@ const initInterviewWebSocket = () => {
   }
 
   const token = localStorage.getItem('token');
-  // 注意：后端 Interview_session_api 挂载在 /api/interview，内部路径是 /ws/interview
-  // 所以完整路径应该是 /api/interview/ws/interview
-  const wsUrl = `${urlObj.origin}${basePath}/api/interview/ws/interview?token=${token}`;
+  
+  // 🤖 使用新的 Agent API 端点（基于 LangGraph 的智能面试官）
+  // 旧端点: /api/interview/ws/interview (硬编码题库)
+  // 新端点: /api/interview/ws/interview/agent (AI Agent)
+  const wsUrl = `${urlObj.origin}${basePath}/api/interview/ws/interview/agent?token=${token}`;
 
   console.log("尝试连接面试 WebSocket:", wsUrl);
 
@@ -243,6 +246,12 @@ const handleInterviewMessage = async (message) => {
       handleStatusUpdate(message.data);
       break;
 
+    case 'opening':
+      // 处理开场白（不是问题，只是欢迎语）
+      console.log('[Interview] 👋 Opening:', message.text);
+      // 开场白已经通过 subtitle 显示，这里只记录日志
+      break;
+
     case 'question':
       handleQuestion(message);
       break;
@@ -267,6 +276,12 @@ const handleInterviewMessage = async (message) => {
       handleAnalysis(message);
       break;
 
+    case 'closing':
+      // 处理结束语（不需要回答，只是告别）
+      console.log('[Interview] 👋 Closing:', message.text);
+      // 结束语已经通过 subtitle 显示，这里只记录日志
+      break;
+
     case 'end':
       handleInterviewEnd(message);
       break;
@@ -289,24 +304,30 @@ const handleStatusUpdate = (data) => {
   
   if (data.stage === 'ready') {
     isLoading.value = false;
-    interviewStatus.value = 'waiting_ready';
+    // 不再显示 waiting_ready 弹窗，直接进入面试
+    // 开场白后会自动发送第一个问题
+    interviewStatus.value = 'in_progress';
     jobName.value = data.job_name || '';
     totalQuestions.value = data.total_questions || 0;
     
     // 显示准备就绪提示
-    ElMessage.success(`简历已加载，共准备了 ${totalQuestions.value} 个问题`);
+    console.log('[Interview] ✅ Ready, interview will start automatically');
   } else {
     isLoading.value = true;
   }
 };
 
 const handleQuestion = (message) => {
-  currentQuestionIndex.value = message.index || 0;
+  currentQuestionIndex.value = message.index || message.question_index || 0;
   totalQuestions.value = message.total || totalQuestions.value;
   
   // 清空当前字幕，准备显示新问题
   currentSubtitle.value = '';
   userTranscription.value = '';
+  
+  // 重置提交状态
+  canSubmitAnswer.value = false;
+  isWaitingForSubmit.value = false;
   
   // 如果是追问，添加标记
   if (message.is_follow_up) {
@@ -335,12 +356,17 @@ const handleSubtitle = (message) => {
   }
 };
 
-// ==================== 修复区域 ====================
+// ==================== 音频队列管理 ====================
 // 音频流缓冲区
 let audioChunks = [];
-let currentAudio = null;
+let currentPlayingAudio = null;  // 当前正在播放的音频
 let isPlayingQueue = false;
-// 已删除重复定义的 audioContext 和 audioQueue
+
+// 音频播放队列 - 确保按顺序播放
+const audioPlayQueue = ref([]);        // 待播放的音频队列
+const isAudioQueuePlaying = ref(false); // 是否正在播放队列
+const canSubmitAnswer = ref(false);     // 是否可以提交回答（音频播完后才允许）
+const isWaitingForSubmit = ref(false);  // 是否等待用户点击提交
 // ==================== 修复结束 ====================
 
 const handleAudio = async (message) => {
@@ -353,39 +379,27 @@ const handleAudio = async (message) => {
       view[i] = audioData.charCodeAt(i);
     }
     
-    // 创建音频 Blob 并播放
+    // 创建音频 Blob 并加入队列（不立即播放）
     const audioBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
+    audioPlayQueue.value.push(audioBlob);
     
-    audio.onended = () => {
-      URL.revokeObjectURL(audioUrl);
-      isPlayingAudio.value = false;
-      
-      // 音频播放完毕后，开始录制用户回答
-      if (interviewStatus.value === 'in_progress') {
-        startRecordingAnswer();
-      }
-    };
-    
-    isPlayingAudio.value = true;
-    await audio.play();
+    // 如果队列没在播放，启动播放
+    if (!isAudioQueuePlaying.value) {
+      playNextAudioInQueue();
+    }
     
   } catch (error) {
     console.error("音频播放失败:", error);
-    // 即使音频播放失败，也继续流程
-    if (interviewStatus.value === 'in_progress') {
-      startRecordingAnswer();
-    }
+    // 不再自动开始录音
   }
 };
 
 const handleAudioChunk = async (message) => {
   try {
     if (message.is_final) {
-      // 收到结束标记，合并所有音频块并播放
+      // 收到结束标记，合并所有音频块并加入播放队列
       if (audioChunks.length > 0) {
-        console.log(`收到完整音频流，共 ${audioChunks.length} 个片段`);
+        console.log(`收到完整音频流，共 ${audioChunks.length} 个片段，加入播放队列`);
         
         // 合并所有音频数据
         const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
@@ -399,34 +413,18 @@ const handleAudioChunk = async (message) => {
         // 为PCM数据添加WAV文件头
         const wavData = addWavHeader(mergedPCM, 24000, 1, 16);
         
-        // 创建完整的音频 Blob 并播放
+        // 创建完整的音频 Blob 并加入队列（而不是立即播放）
         const audioBlob = new Blob([wavData], { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
+        audioPlayQueue.value.push(audioBlob);
+        audioChunks = [];  // 清空缓冲区
         
-        audio.onerror = (e) => {
-          console.error("音频播放错误:", e);
-          URL.revokeObjectURL(audioUrl);
-          isPlayingAudio.value = false;
-          audioChunks = [];
-          if (interviewStatus.value === 'in_progress') {
-            startRecordingAnswer();
-          }
-        };
-        
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          isPlayingAudio.value = false;
-          audioChunks = [];  // 清空缓冲区
-          
-          // 音频播放完毕后，开始录制用户回答
-          if (interviewStatus.value === 'in_progress') {
-            startRecordingAnswer();
-          }
-        };
-        
-        isPlayingAudio.value = true;
-        await audio.play();
+        // 如果队列没在播放，启动播放
+        if (!isAudioQueuePlaying.value) {
+          playNextAudioInQueue();
+        }
+      } else {
+        // 空的音频块（可能是结束信号），清空缓冲区
+        audioChunks = [];
       }
     } else if (message.data) {
       // 解码并缓存音频块
@@ -442,9 +440,77 @@ const handleAudioChunk = async (message) => {
   } catch (error) {
     console.error("音频流处理失败:", error);
     audioChunks = [];
-    if (interviewStatus.value === 'in_progress') {
-      startRecordingAnswer();
+  }
+};
+
+// 播放队列中的下一个音频
+const playNextAudioInQueue = async () => {
+  if (audioPlayQueue.value.length === 0) {
+    // 队列为空，所有音频播放完毕
+    isAudioQueuePlaying.value = false;
+    isPlayingAudio.value = false;
+    currentPlayingAudio = null;
+    
+    // 检查是否等待结束语播放完毕
+    if (waitingForClosingRemarks.value) {
+      console.log('[Interview] ✅ 结束语播放完毕，显示结束弹窗');
+      waitingForClosingRemarks.value = false;
+      
+      // 停止所有设备
+      stopMediaDevices();
+      
+      // 显示结束弹窗
+      isInterviewStarted.value = false;
+      isShowEndModal.value = true;
+      
+      // 25秒后跳转到首页
+      // setTimeout(() => {
+      //   router.push('/Home');
+      // }, 25000);
+      
+      return;
     }
+    
+    // 允许用户提交回答（只有在面试进行中且未结束时）
+    if (interviewStatus.value === 'in_progress') {
+      canSubmitAnswer.value = true;
+      isWaitingForSubmit.value = true;
+      console.log('✅ 音频播放完毕，等待用户点击开始回答');
+    }
+    return;
+  }
+  
+  isAudioQueuePlaying.value = true;
+  isPlayingAudio.value = true;
+  canSubmitAnswer.value = false;  // 播放时不允许提交
+  
+  const audioBlob = audioPlayQueue.value.shift();
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(audioUrl);
+  currentPlayingAudio = audio;  // 保存引用，用于结束时停止
+  
+  audio.onerror = (e) => {
+    console.error("音频播放错误:", e);
+    URL.revokeObjectURL(audioUrl);
+    currentPlayingAudio = null;
+    // 继续播放下一个
+    playNextAudioInQueue();
+  };
+  
+  audio.onended = () => {
+    URL.revokeObjectURL(audioUrl);
+    currentPlayingAudio = null;
+    console.log(`🔊 音频播放完成，队列剩余: ${audioPlayQueue.value.length}`);
+    // 继续播放下一个
+    playNextAudioInQueue();
+  };
+  
+  try {
+    await audio.play();
+  } catch (e) {
+    console.error("音频播放失败:", e);
+    currentPlayingAudio = null;
+    playNextAudioInQueue();
   }
 };
 
@@ -473,25 +539,58 @@ const handleAnalysis = (message) => {
 };
 
 const handleInterviewEnd = (message) => {
+  console.log('[Interview] 🏁 Interview ended:', message);
+  
+  // 如果已经结束（用户主动结束），不重复处理
+  if (interviewStatus.value === 'ended') {
+    // 只更新摘要信息
+    if (message.summary) {
+      interviewSummary.value = message.summary;
+    }
+    return;
+  }
+  
   interviewStatus.value = 'ended';
   interviewSummary.value = message.summary;
   
-  // 停止所有设备
-  stopMediaDevices();
-  
-  // 显示结束弹窗
-  isInterviewStarted.value = false;
-  isShowEndModal.value = true;
+  // 停止录音
+  if (audioRecorder.value && audioRecorder.value.state === 'recording') {
+    audioRecorder.value.stop();
+  }
+  isRecordingAnswer.value = false;
   
   // 停止计时
   clearInterval(timerInterval);
+  
+  canSubmitAnswer.value = false;
+  isWaitingForSubmit.value = false;
+  
+  // 注意：后端现在会先发送结束语音频，再发送 end 消息
+  // 所以这里**不清空音频队列**，让结束语正常播放
+  // 设置标志：等待结束语播放完毕
+  waitingForClosingRemarks.value = true;
+  
+  console.log('[Interview] ⏳ 等待结束语播放完毕...');
+  console.log(`[Interview] 📢 当前音频队列长度: ${audioPlayQueue.value.length}, 正在播放: ${isAudioQueuePlaying.value}`);
+  
+  // 如果队列为空且没有正在播放的音频，直接显示结束弹窗
+  if (audioPlayQueue.value.length === 0 && !isAudioQueuePlaying.value) {
+    console.log('[Interview] ⚠️ 没有结束语音频，直接显示结束弹窗');
+    waitingForClosingRemarks.value = false;
+    stopMediaDevices();
+    isInterviewStarted.value = false;
+    isShowEndModal.value = true;
+    setTimeout(() => {
+      router.push('/');
+    }, 5000);
+  }
   
   ElMessage.success(`面试已结束，平均得分: ${message.summary?.average_score || 'N/A'}`);
 };
 
 const handleRedirect = (message) => {
   if (message.target === 'home') {
-    router.push({ name: 'Home' });
+    router.back();
   }
 };
 
@@ -558,15 +657,9 @@ const startRecordingAnswer = () => {
     reader.readAsDataURL(audioBlob);
   };
   
-  // 开始录制，设置最长录制时间（90秒）
+  // 开始录制（不再设置自动超时，由用户手动点击提交）
   audioRecorder.value.start();
-  
-  // 90秒后自动停止
-  setTimeout(() => {
-    if (audioRecorder.value && audioRecorder.value.state === 'recording') {
-      stopRecordingAnswer();
-    }
-  }, 90000);
+  console.log('[Recording] 🎤 Started recording - waiting for user to submit');
 };
 
 // 停止录制用户回答
@@ -576,9 +669,27 @@ const stopRecordingAnswer = () => {
   }
 };
 
-// 手动提交回答（用于调试或用户主动结束）
+// 手动提交回答
 const submitAnswer = () => {
-  stopRecordingAnswer();
+  if (!canSubmitAnswer.value && !isRecordingAnswer.value) {
+    ElMessage.warning('请等待面试官说完后再提交回答');
+    return;
+  }
+  
+  // 如果还在等待提交状态，开始录音
+  if (isWaitingForSubmit.value && !isRecordingAnswer.value) {
+    isWaitingForSubmit.value = false;
+    startRecordingAnswer();
+    ElMessage.info('正在录音，再次点击提交完成回答');
+    return;
+  }
+  
+  // 如果正在录音，停止并提交
+  if (isRecordingAnswer.value) {
+    stopRecordingAnswer();
+    canSubmitAnswer.value = false;
+    ElMessage.success('回答已提交');
+  }
 };
 
 // 使用文本回答（调试用）
@@ -672,23 +783,51 @@ const handleEndInterview = async () => {
       }
     );
     
-    // 发送结束消息
-    sendInterviewMessage({ type: 'end' });
+    console.log('[Interview] 🛑 User requested end interview');
     
     // 停止计时
     clearInterval(timerInterval);
     
     // 停止录音
-    stopRecordingAnswer();
+    if (audioRecorder.value && audioRecorder.value.state === 'recording') {
+      audioRecorder.value.stop();
+    }
     
-  } catch {
+    // 清空当前音频队列（不包括即将到来的结束语）
+    // 停止当前正在播放的音频
+    if (currentPlayingAudio) {
+      currentPlayingAudio.pause();
+      currentPlayingAudio.src = '';
+      currentPlayingAudio = null;
+    }
+    audioPlayQueue.value = [];
+    audioChunks = [];
+    isAudioQueuePlaying.value = false;
+    isPlayingAudio.value = false;
+    
+    // 发送结束消息给后端
+    sendInterviewMessage({ type: 'end' });
+    
+    // 更新状态
+    interviewStatus.value = 'ended';
+    canSubmitAnswer.value = false;
+    isWaitingForSubmit.value = false;
+    
+    // 设置标志：等待结束语播放完毕
+    // 后端会发送结束语音频，等待音频队列播放完后再显示弹窗
+    waitingForClosingRemarks.value = true;
+    
+    console.log('[Interview] ⏳ 已发送结束请求，等待结束语播放完毕...');
+    
+  } catch (error) {
     // 用户取消
+    console.log('[Interview] ❌ 用户取消结束面试');
   }
 };
 
 // 返回首页
 const goBackHome = () => {
-  router.push({ name: 'Home' });
+  router.back();
 };
 
 // 保存面试记录
@@ -761,7 +900,19 @@ const startTotalTimer = () => {
 
 onUnmounted(() => {
   clearInterval(timerInterval);
+  
+  // 停止当前播放的音频
+  if (currentPlayingAudio) {
+    currentPlayingAudio.pause();
+    currentPlayingAudio.src = '';
+    currentPlayingAudio = null;
+  }
+  
   stopMediaDevices();
+  // 清理音频队列
+  audioPlayQueue.value = [];
+  audioChunks = [];
+  isAudioQueuePlaying.value = false;
 });
 </script>
 
@@ -873,8 +1024,14 @@ onUnmounted(() => {
               {{ isSelfVideoOff ? '打开摄像头' : '关闭摄像头' }}
             </button>
 
-            <button v-if="isRecordingAnswer" class="interactive-btn submit-btn" @click="submitAnswer">
-              ✅ 提交回答
+            <button v-if="isRecordingAnswer" class="interactive-btn submit-btn recording" @click="submitAnswer">
+              🔴 提交回答
+            </button>
+            <button v-else-if="isWaitingForSubmit && canSubmitAnswer" class="interactive-btn submit-btn ready" @click="submitAnswer">
+              🎤 开始回答
+            </button>
+            <button v-else-if="isPlayingAudio || isAudioQueuePlaying" class="interactive-btn" disabled>
+              🔊 面试官讲话中...
             </button>
 
             <button class="interactive-btn emergency" @click="handleEndInterview" :disabled="interviewStatus === 'ended'">
@@ -1323,6 +1480,28 @@ onUnmounted(() => {
   background-color: #10b981;
   color: #fff;
   border-color: #10b981;
+}
+
+.interactive-btn.submit-btn.ready {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.interactive-btn.submit-btn.recording {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  animation: recording-pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .interactive-btn.submit-btn:hover {

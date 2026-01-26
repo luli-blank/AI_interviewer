@@ -18,7 +18,7 @@ router = APIRouter()
 # 2. 通过变量设置题目数量
 # ===================================================================
 # 你可以在这里修改，来控制最终问卷的题目总数
-TOTAL_QUESTIONS_TO_FETCH = 5
+TOTAL_QUESTIONS_TO_FETCH = 20
 
 
 @router.get("/questions", response_model=SurveyResponse)
