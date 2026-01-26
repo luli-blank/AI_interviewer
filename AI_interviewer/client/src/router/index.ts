@@ -12,6 +12,7 @@ const CreateJob_3 = () => import('../views/CreateJob_3.vue')
 const Interview_Review = () => import('../views/Interview_Review.vue')
 const Profile = () => import('../views/Profile.vue')
 const Interview = () => import('../views/Interview.vue')
+const Interview_AI = () => import('../views/Interview_AI.vue')
 const CharacterTest = () => import('../views/Character_test.vue')
 const CharacterTestWirte = () => import('../views/Character_test_write.vue')
 const InterviewCharacter = () => import('../views/Character_test_video.vue')
@@ -72,6 +73,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'Interview',
         name: 'Interview',
         component: Interview 
+      },
+      {
+        path: 'Interview_AI',
+        name: 'Interview_AI',
+        component: Interview_AI 
       },
       {
         path: '/Character_test',

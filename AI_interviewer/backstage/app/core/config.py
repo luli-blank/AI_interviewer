@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     ALGORITHM: str
 
     Silicon_OCR_API_Key: str
+
+   
+    
     # --- 2. 告诉 Pydantic 去哪里找配置 ---
     class Config:
         # 指定读取根目录下的 .env 文件

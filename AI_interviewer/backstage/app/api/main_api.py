@@ -8,6 +8,11 @@ from app.db.session import engine, Base
 from app.core.get_user import get_current_user_id
 from fastapi import Depends
 from app.api.interviewee_api import Character_test_writer_api,Character_test_report_api, Interview_position_api, Interview_record_api
+from app.api.interviewee_api import Interview_session_api  # 新增：面试会话API
+
+# 导入所有模型以便自动创建表
+from app.models.Interview_question import InterviewQuestion, InterviewQuestionUsage
+
 app = FastAPI()
 
 # 添加日志中间件，用于调试请求是否到达
@@ -56,5 +61,6 @@ app.include_router(Interview_video_api.router, tags=["video_stream"])
 app.include_router(Interview_position_api.router, prefix="/api/interviewee", tags=["Interview Position"], dependencies=[Depends(get_current_user_id)])
 app.include_router(Interview_record_api.router, prefix="/api/interviewee", tags=["Interview Record"], dependencies=[Depends(get_current_user_id)])
 app.include_router(Resume_upload_api.router, prefix="/api/interview", tags=["Interview Create"], dependencies=[Depends(get_current_user_id)])
+app.include_router(Interview_session_api.router, prefix="/api/interview", tags=["Interview Session"])  # 新增：面试会话路由
 # 启动命令（在终端运行）：终端路径需要抵达backstage
 # uvicorn app.api.main_api:app --reload --port 8000

@@ -69,53 +69,6 @@ const progressText = computed(() => {
   return `第 ${currentQuestionIndex.value} / ${totalQuestions.value} 题`;
 });
 
-// ==================== 工具函数 ====================
-
-/**
- * 为PCM数据添加WAV文件头
- * @param {Uint8Array} pcmData - PCM音频数据
- * @param {number} sampleRate - 采样率 (默认24000Hz)
- * @param {number} channels - 声道数 (默认1)
- * @param {number} bitDepth - 位深度 (默认16bit)
- * @returns {Uint8Array} 带WAV头的完整音频数据
- */
-const addWavHeader = (pcmData, sampleRate = 24000, channels = 1, bitDepth = 16) => {
-  const dataLength = pcmData.length;
-  const buffer = new ArrayBuffer(44 + dataLength);
-  const view = new DataView(buffer);
-  
-  // RIFF chunk descriptor
-  writeString(view, 0, 'RIFF');
-  view.setUint32(4, 36 + dataLength, true);
-  writeString(view, 8, 'WAVE');
-  
-  // fmt sub-chunk
-  writeString(view, 12, 'fmt ');
-  view.setUint32(16, 16, true); // chunk size
-  view.setUint16(20, 1, true); // audio format (1 = PCM)
-  view.setUint16(22, channels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * channels * bitDepth / 8, true); // byte rate
-  view.setUint16(32, channels * bitDepth / 8, true); // block align
-  view.setUint16(34, bitDepth, true);
-  
-  // data sub-chunk
-  writeString(view, 36, 'data');
-  view.setUint32(40, dataLength, true);
-  
-  // 写入PCM数据
-  const result = new Uint8Array(buffer);
-  result.set(pcmData, 44);
-  
-  return result;
-};
-
-const writeString = (view, offset, string) => {
-  for (let i = 0; i < string.length; i++) {
-    view.setUint8(offset + i, string.charCodeAt(i));
-  }
-};
-
 // ==================== 媒体设备初始化 ====================
 
 const initMediaDevices = async () => {
@@ -198,9 +151,7 @@ const initInterviewWebSocket = () => {
   }
 
   const token = localStorage.getItem('token');
-  // 注意：后端 Interview_session_api 挂载在 /api/interview，内部路径是 /ws/interview
-  // 所以完整路径应该是 /api/interview/ws/interview
-  const wsUrl = `${urlObj.origin}${basePath}/api/interview/ws/interview?token=${token}`;
+  const wsUrl = `${urlObj.origin}${basePath}/interview/ws/interview?token=${token}`;
 
   console.log("尝试连接面试 WebSocket:", wsUrl);
 
@@ -253,10 +204,6 @@ const handleInterviewMessage = async (message) => {
 
     case 'audio':
       handleAudio(message);
-      break;
-
-    case 'audio_chunk':
-      handleAudioChunk(message);
       break;
 
     case 'transcription':
@@ -335,14 +282,6 @@ const handleSubtitle = (message) => {
   }
 };
 
-// ==================== 修复区域 ====================
-// 音频流缓冲区
-let audioChunks = [];
-let currentAudio = null;
-let isPlayingQueue = false;
-// 已删除重复定义的 audioContext 和 audioQueue
-// ==================== 修复结束 ====================
-
 const handleAudio = async (message) => {
   try {
     // 解码 Base64 音频数据
@@ -354,7 +293,7 @@ const handleAudio = async (message) => {
     }
     
     // 创建音频 Blob 并播放
-    const audioBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
+    const audioBlob = new Blob([arrayBuffer], { type: 'audio/mp3' });
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
     
@@ -374,74 +313,6 @@ const handleAudio = async (message) => {
   } catch (error) {
     console.error("音频播放失败:", error);
     // 即使音频播放失败，也继续流程
-    if (interviewStatus.value === 'in_progress') {
-      startRecordingAnswer();
-    }
-  }
-};
-
-const handleAudioChunk = async (message) => {
-  try {
-    if (message.is_final) {
-      // 收到结束标记，合并所有音频块并播放
-      if (audioChunks.length > 0) {
-        console.log(`收到完整音频流，共 ${audioChunks.length} 个片段`);
-        
-        // 合并所有音频数据
-        const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-        const mergedPCM = new Uint8Array(totalLength);
-        let offset = 0;
-        for (const chunk of audioChunks) {
-          mergedPCM.set(chunk, offset);
-          offset += chunk.length;
-        }
-        
-        // 为PCM数据添加WAV文件头
-        const wavData = addWavHeader(mergedPCM, 24000, 1, 16);
-        
-        // 创建完整的音频 Blob 并播放
-        const audioBlob = new Blob([wavData], { type: 'audio/wav' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        
-        audio.onerror = (e) => {
-          console.error("音频播放错误:", e);
-          URL.revokeObjectURL(audioUrl);
-          isPlayingAudio.value = false;
-          audioChunks = [];
-          if (interviewStatus.value === 'in_progress') {
-            startRecordingAnswer();
-          }
-        };
-        
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          isPlayingAudio.value = false;
-          audioChunks = [];  // 清空缓冲区
-          
-          // 音频播放完毕后，开始录制用户回答
-          if (interviewStatus.value === 'in_progress') {
-            startRecordingAnswer();
-          }
-        };
-        
-        isPlayingAudio.value = true;
-        await audio.play();
-      }
-    } else if (message.data) {
-      // 解码并缓存音频块
-      const audioData = atob(message.data);
-      const arrayBuffer = new ArrayBuffer(audioData.length);
-      const view = new Uint8Array(arrayBuffer);
-      for (let i = 0; i < audioData.length; i++) {
-        view[i] = audioData.charCodeAt(i);
-      }
-      audioChunks.push(view);
-    }
-    
-  } catch (error) {
-    console.error("音频流处理失败:", error);
-    audioChunks = [];
     if (interviewStatus.value === 'in_progress') {
       startRecordingAnswer();
     }
@@ -768,6 +639,7 @@ onUnmounted(() => {
 <template>
   <div class="interview-practice">
 
+    <!-- 1. 开始面试确认弹窗 -->
     <div v-if="isShowStartModal" class="start-modal-overlay">
       <div class="start-modal">
         <div class="modal-icon">📹</div>
@@ -780,6 +652,7 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- 2. 面试初始化中弹窗 -->
     <div v-if="isLoading && isInterviewStarted && interviewStatus === 'initializing'" class="start-modal-overlay">
       <div class="start-modal">
         <div class="modal-icon">⏳</div>
@@ -789,6 +662,7 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- 3. 等待用户准备就绪弹窗 -->
     <div v-if="interviewStatus === 'waiting_ready' && !isShowEndModal" class="start-modal-overlay">
       <div class="start-modal">
         <div class="modal-icon">🎯</div>
@@ -802,6 +676,7 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- 4. 面试结束弹窗 -->
     <div v-if="isShowEndModal" class="start-modal-overlay">
       <div class="start-modal">
         <div class="modal-icon">🏁</div>
@@ -816,8 +691,10 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- 面试演练主区域 -->
     <div class="practice-container" :class="{ 'blur-bg': isShowStartModal || isShowEndModal || interviewStatus === 'waiting_ready' || (isLoading && interviewStatus === 'initializing') }">
       
+      <!-- 面试基础信息 -->
       <div class="practice-header">
         <div class="job-info">
           <h2>AI智能面试 {{ jobName ? `- ${jobName}` : '' }}</h2>
@@ -835,6 +712,7 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- 核心面试区域 -->
       <div class="interview-main">
 
         <div class="interview-interactive">
@@ -854,12 +732,14 @@ onUnmounted(() => {
               </div>
             </div>
             
+            <!-- 用户语音转录实时显示 -->
             <div v-if="userTranscription && isRecordingAnswer" class="user-transcription">
               <span class="transcription-label">您的回答:</span>
               <span class="transcription-text">{{ userTranscription }}</span>
             </div>
           </div>
 
+          <!-- 面试交互控制 -->
           <div class="interactive-controls">
             <button class="interactive-btn" :class="{ 'active': isSelfMuted }" @click="toggleSelfMute"
               :disabled="!isInterviewStarted">
@@ -873,6 +753,7 @@ onUnmounted(() => {
               {{ isSelfVideoOff ? '打开摄像头' : '关闭摄像头' }}
             </button>
 
+            <!-- 提交回答按钮 -->
             <button v-if="isRecordingAnswer" class="interactive-btn submit-btn" @click="submitAnswer">
               ✅ 提交回答
             </button>
@@ -883,6 +764,7 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- 面试官信息展示区 -->
         <div class="interviewer-panel">
           <div class="interviewer-avatar">
             <img :src="interviewerAvatar" alt="面试官头像" />
