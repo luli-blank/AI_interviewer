@@ -1,7 +1,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router'
-import interviewImg  from  '@/img/interviewer.jpg'
+import { ElMessage } from 'element-plus'
+import interviewImg  from  '@/img/interviewer.gif'
+import defaultAvatar from '@/img/log.png'
+import { createRecord } from '../api/Interview_record'
+
 const router = useRouter()
 const route = useRoute() 
 
@@ -154,8 +158,21 @@ const handleStartInterview = async () => {
     }
   }
 };
-
-
+// 保存面试记录
+const saveInterviewRecord = async () => {
+  if (interviewerId && positionId) {
+    try {
+      await createRecord({
+        position_id: positionId,
+        interviewer_id: interviewerId
+      })
+      ElMessage.success('面试记录已保存')
+    } catch (error) {
+      console.error('保存面试记录失败:', error)
+      ElMessage.error('保存面试记录失败')
+    }
+  }
+}
 // 新增：点击“结束面试”
 const handleEndInterview = () => {
   // 1. 停止计时和字幕
@@ -168,7 +185,10 @@ const handleEndInterview = () => {
   // 3. 更新状态
   isInterviewStarted.value = false;
   
-  // 4. 显示结束弹窗
+  // 4. 保存记录
+  saveInterviewRecord();
+
+  // 5. 显示结束弹窗
   isShowEndModal.value = true;
 };
 
@@ -183,6 +203,9 @@ const goBack = () => {
 // --- 面试基础信息 ---
 const interviewerName = route.query.name || '面试官'
 const interviewerTitle = route.query.title || '资深产品专家'
+const interviewerAvatar = route.query.avatar || defaultAvatar
+const interviewerId = Number(route.query.interviewer_id)
+const positionId = Number(route.query.position_id)
 
 const totalTimer = ref('00:00:00'); 
 let timerInterval = null;
@@ -406,7 +429,7 @@ const startSubtitleSimulation = () => {
          <!-- 面试官信息展示区 -->
         <div class="interviewer-panel">
           <div class="interviewer-avatar">
-            <img src="https://via.placeholder.com/64" alt="面试官头像" />
+            <img :src="interviewerAvatar" alt="面试官头像" />
           </div>
           <div class="interviewer-info">
             <h3>{{interviewerName}}</h3>
@@ -498,7 +521,7 @@ const startSubtitleSimulation = () => {
 
 .interview-main { display: flex; gap: 24px; margin-bottom: 32px; }
 .interviewer-panel { width: 300px; background-color: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 20px; }
-.interviewer-avatar { text-align: center; }
+.interviewer-avatar { text-align: center; object-fit: contain;}
 .interviewer-avatar img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .interviewer-info { text-align: center; }
 .interviewer-info h3 { font-size: 18px; color: #1f2937; margin: 0; }

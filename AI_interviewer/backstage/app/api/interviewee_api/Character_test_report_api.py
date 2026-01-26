@@ -11,7 +11,10 @@ from app.schemas.Character_test_report import ReportSchema
 from app.db.session import get_db
 from app.core.get_user import get_current_user_id 
 from app.models.Character_answer import Character_answer
+from dotenv import load_dotenv  # <--- 加上这一行
+import os
 
+load_dotenv()  # 这样这行代码才会被识别
 router = APIRouter()
 
 def _default_radar(personality_type: str) -> list[dict]:
@@ -250,7 +253,7 @@ async def generate_report(
     try:
         # 建议加上 timeout 防止请求卡死
         client = OpenAI(
-            api_key="sk-3615ad3d723a4578b7a36dd23de7b398", 
+            api_key=os.getenv("Deepseek_API_Key"),
             base_url="https://api.deepseek.com",
             timeout=60.0 # 设置 60秒超时
         )

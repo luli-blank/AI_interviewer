@@ -43,7 +43,7 @@ const startInterview = async () => {
     if (countdown <= 0) {
       clearInterval(timer)
       isSubmitting.value = false
-      btnText.value = '提交数据'
+      btnText.value = '数据同步'
     } else {
       btnText.value = `请等待 ${countdown} 秒`
     }
